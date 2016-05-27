@@ -37,7 +37,7 @@
 	</div>
 	<script type="text/javascript">
 		var handler = StripeCheckout.configure({
-			key: 'pk_test_g4xEGpWUVb8DZSdophAK4jcD',
+			key: '{$stripe_publishable_key|escape:'javascript':'UTF-8'}',
 			image: '/img/logo.jpg',
 			locale: 'auto',
 			token: function (token) {
@@ -53,8 +53,8 @@
 		$('#mdstripe_payment_link').on('click', function(e) {
 			// Open Checkout with further options:
 			handler.open({
-				name: '{$shopname|escape:'javascript':'UTF-8'}',
-				zipCode: {if $stripe_zipcode}true{else}false{/if},,
+				name: '{$stripe_shopname|escape:'javascript':'UTF-8'}',
+				zipCode: {if $stripe_zipcode}true{else}false{/if},
 				bitcoin: {if $stripe_bitcoin}true{else}false{/if},
 				alipay: {if $stripe_alipay}true{else}false{/if},
 				currency: '{$stripe_currency|escape:'javascript':'UTF-8'}',

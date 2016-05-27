@@ -41,8 +41,8 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
         $currency = new Currency((int)$cart->id_currency);
 
         $stripe = array(
-            'secret_key' => 'sk_test_j1SR7Wkm2mreT22WCFisSF20',
-            'publishable_key' => 'pk_test_g4xEGpWUVb8DZSdophAK4jcD',
+            'secret_key' => Configuration::get(MDStripe::SECRET_KEY),
+            'publishable_key' => Configuration::get(MDStripe::PUBLISHABLE_KEY),
         );
 
         \Stripe\Stripe::setApiKey($stripe['secret_key']);
@@ -59,7 +59,7 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
         ));
 
         if ($stripe_charge->paid === true) {
-            $payment_status = Configuration::get('PS_OS_PAYMENT');
+            $payment_status = Configuration::get(MDStripe::STATUS_VALIDATED);
             $message = null;
 
             /**

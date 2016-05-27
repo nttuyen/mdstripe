@@ -52,9 +52,9 @@ class MdstripeEupaymentModuleFrontController extends ModuleFrontController
             'stripe_secret_key' => Configuration::get(MDStripe::SECRET_KEY),
             'stripe_publishable_key' => Configuration::get(MDStripe::PUBLISHABLE_KEY),
             'stripe_locale' => MDStripe::getStripeLanguage($this->context->language->language_code),
-            'stripe_zipcode' => Configuration::get(MDStripe::ZIPCODE),
-            'stripe_bitcoin' => Configuration::get(MDStripe::BITCOIN),
-            'stripe_alipay' => Configuration::get(MDStripe::ALIPAY),
+            'stripe_zipcode' => (bool)Configuration::get(MDStripe::ZIPCODE),
+            'stripe_bitcoin' => (bool)Configuration::get(MDStripe::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
+            'stripe_alipay' => (bool)Configuration::get(MDStripe::ALIPAY),
             'stripe_shopname' => $this->context->shop->name,
         ));
 

@@ -34,6 +34,12 @@ class MDStripe extends PaymentModule
     const SECRET_KEY = 'MDSTRIPE_SECRET_KEY';
     const PUBLISHABLE_KEY = 'MDSTRIPE_PUBLISHABLE_KEY';
 
+    const STATUS_VALIDATED = 'MDSTRIPE_STATUS_VALIDATED';
+    const STATUS_REFUND = 'MDSTRIPE_STATUS_REFUND';
+    const GENERATE_CREDIT_SLIP = 'MDSTRIPE_CREDIT_SLIP';
+
+    const OPTIONS_MODULE_SETTINGS = 1;
+
     public $module_url;
 
     public static $stripe_languages = array('zh', 'nl', 'en', 'fr', 'de', 'it', 'ja', 'es');
@@ -175,13 +181,14 @@ class MDStripe extends PaymentModule
     protected function renderGeneralOptions()
     {
         $helper = new HelperOptions();
+        $helper->id = self::OPTIONS_MODULE_SETTINGS;
         $helper->module = $this;
         $helper->token = Tools::getAdminTokenLite('AdminModules');
         $helper->currentIndex = AdminController::$currentIndex.'&configure='.$this->name;
         $helper->title = $this->displayName;
         $helper->show_toolbar = false;
 
-        return $helper->generateOptions($this->getGeneralOptions());
+        return $helper->generateOptions(array_merge($this->getGeneralOptions(), $this->getOrderOptions()));
     }
 
     protected function getGeneralOptions()
@@ -216,7 +223,7 @@ class MDStripe extends PaymentModule
                         'cast' => 'intval',
                     ),
                     self::BITCOIN=> array(
-                        'title' => $this->l('Accept bitcoins'),
+                        'title' => $this->l('Accept Bitcoins'),
                         'type' => 'bool',
                         'name' => self::BITCOIN,
                         'value' => Configuration::get(self::BITCOIN),
@@ -240,6 +247,65 @@ class MDStripe extends PaymentModule
         );
     }
 
+    protected function getOrderOptions()
+    {
+        $order_statuses = OrderState::getOrderStates($this->context->language->id);
+
+        $status_validated = (int)Configuration::get(self::STATUS_VALIDATED);
+        if ($status_validated < 1) {
+            $status_validated = (int)Configuration::get('PS_OS_PAYMENT');
+        }
+
+        $status_refund = (int)Configuration::get(self::STATUS_REFUND);
+        if ($status_refund < 1) {
+            $status_refund = (int)Configuration::get('PS_OS_REFUND');
+        }
+
+        return array(
+            'orders' => array(
+                'title' => $this->l('Order Settings'),
+                'icon' => 'icon-credit-card',
+                'fields' => array(
+                    self::STATUS_VALIDATED => array(
+                        'title' => $this->l('Payment accepted status'),
+                        'des' => $this->l('Order status to use when the payment is accepted'),
+                        'type' => 'select',
+                        'list' => $order_statuses,
+                        'identifier' => 'id_order_state',
+                        'name' => self::STATUS_VALIDATED,
+                        'value' => $status_validated,
+                        'validation' => 'isString',
+                        'cast' => 'strval',
+                    ),
+                    self::STATUS_REFUND => array(
+                        'title' => $this->l('Refund status'),
+                        'desc' => $this->l('Order status to use when the order is refunded'),
+                        'type' => 'select',
+                        'list' => $order_statuses,
+                        'identifier' => 'id_order_state',
+                        'name' => self::PUBLISHABLE_KEY,
+                        'value' => $status_refund,
+                        'validation' => 'isString',
+                        'cast' => 'strval',
+                    ),
+                    self::GENERATE_CREDIT_SLIP => array(
+                        'title' => $this->l('Generate credit slip'),
+                        'desc' => $this->l('Automatically generate a credit slip when the order is refunded'),
+                        'type' => 'bool',
+                        'name' => self::GENERATE_CREDIT_SLIP,
+                        'value' => Configuration::get(self::GENERATE_CREDIT_SLIP),
+                        'validation' => 'isBool',
+                        'cast' => 'intval',
+                    ),
+                ),
+                'submit' => array(
+                    'title' => $this->l('Save'),
+                    'class' => 'button'
+                ),
+            ),
+        );
+    }
+
     /**
      * Save form data.
      */
@@ -247,11 +313,12 @@ class MDStripe extends PaymentModule
     {
         if ($this->menu == self::MENU_SETTINGS && Tools::isSubmit('submitOptionsconfiguration')) {
             $this->postProcessGeneralOptions();
+            $this->postProcessOrderOptions();
         }
     }
 
     /**
-     * Process ImageMagickOptions
+     * Process General Options
      */
     protected function postProcessGeneralOptions()
     {
@@ -318,6 +385,55 @@ class MDStripe extends PaymentModule
     }
 
     /**
+     * Process Order Options
+     */
+    protected function postProcessOrderOptions()
+    {
+        $status_validated = Tools::getValue(self::STATUS_VALIDATED);
+        $status_refund = Tools::getValue(self::STATUS_REFUND);
+        $generate_credit_slip = (bool)Tools::getValue(self::GENERATE_CREDIT_SLIP);
+
+        if (Configuration::get('PS_MULTISHOP_FEATURE_ACTIVE')) {
+            if (Shop::getContext() == Shop::CONTEXT_ALL) {
+                $this->updateAllValue(self::STATUS_VALIDATED, $status_validated);
+                $this->updateAllValue(self::STATUS_REFUND, $status_refund);
+                $this->updateAllValue(self::GENERATE_CREDIT_SLIP, $generate_credit_slip);
+            } elseif (is_array(Tools::getValue('multishopOverrideOption'))) {
+                $id_shop_group = (int)Shop::getGroupFromShop($this->getShopId(), true);
+                $multishop_override = Tools::getValue('multishopOverrideOption');
+                if (Shop::getContext() == Shop::CONTEXT_GROUP) {
+                    foreach (Shop::getShops(false, $this->getShopId()) as $id_shop) {
+                        if ($multishop_override[self::STATUS_VALIDATED]) {
+                            Configuration::updateValue(self::STATUS_VALIDATED, $status_validated, false, $id_shop_group, $id_shop);
+                        }
+                        if ($multishop_override[self::STATUS_REFUND]) {
+                            Configuration::updateValue(self::STATUS_REFUND, $status_refund, false, $id_shop_group, $id_shop);
+                        }
+                        if ($multishop_override[self::GENERATE_CREDIT_SLIP]) {
+                            Configuration::updateValue(self::GENERATE_CREDIT_SLIP, $generate_credit_slip, false, $id_shop_group, $id_shop);
+                        }
+                    }
+                } else {
+                    $id_shop = (int)$this->getShopId();
+                    if ($multishop_override[self::STATUS_VALIDATED]) {
+                        Configuration::updateValue(self::STATUS_VALIDATED, $status_validated, false, $id_shop_group, $id_shop);
+                    }
+                    if ($multishop_override[self::STATUS_REFUND]) {
+                        Configuration::updateValue(self::STATUS_REFUND, $status_refund, false, $id_shop_group, $id_shop);
+                    }
+                    if ($multishop_override[self::GENERATE_CREDIT_SLIP]) {
+                        Configuration::updateValue(self::GENERATE_CREDIT_SLIP, $generate_credit_slip, false, $id_shop_group, $id_shop);
+                    }
+                }
+            }
+        } else {
+            Configuration::updateValue(self::STATUS_VALIDATED, $status_validated);
+            Configuration::updateValue(self::STATUS_REFUND, $status_refund);
+            Configuration::updateValue(self::GENERATE_CREDIT_SLIP, $generate_credit_slip);
+        }
+    }
+
+    /**
      * This method is used to render the payment button,
      * Take care if the button should be displayed or not.
      */
@@ -335,12 +451,18 @@ class MDStripe extends PaymentModule
         $link = $this->context->link;
         
         $this->smarty->assign(array(
-            'module_dir' => $this->_path,
             'stripe_email' => $stripe_email,
             'stripe_currency' => $currency->iso_code,
             'stripe_amount' => (int)$amount * 100,
-            'stripe_confirmation_page' => $link->getModuleLink($this->name, 'validation'),
             'id_cart' => (int)$cart->id,
+            'stripe_secret_key' => Configuration::get(self::SECRET_KEY),
+            'stripe_publishable_key' => Configuration::get(self::PUBLISHABLE_KEY),
+            'stripe_locale' => self::getStripeLanguage($this->context->language->language_code),
+            'stripe_zipcode' => (bool)Configuration::get(self::ZIPCODE),
+            'stripe_bitcoin' => (bool)Configuration::get(self::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
+            'stripe_alipay' => (bool)Configuration::get(self::ALIPAY),
+            'stripe_shopname' => $this->context->shop->name,
+            'stripe_confirmation_page' => $link->getModuleLink($this->name, 'validation'),
         ));
 
         return $this->display(__FILE__, 'views/templates/hook/payment.tpl');
