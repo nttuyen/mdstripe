@@ -39,13 +39,13 @@ class MDStripe extends PaymentModule
     {
         $this->name = 'mdstripe';
         $this->tab = 'payments_gateways';
-        $this->version = '1.0.0';
+        $this->version = '0.6.0';
         $this->author = 'Michael Dekker';
         $this->need_instance = 0;
 
         $this->bootstrap = true;
 
-        $this->controllers = array('webhooks', 'validation');
+        $this->controllers = array('hook', 'validation');
 
         parent::__construct();
 

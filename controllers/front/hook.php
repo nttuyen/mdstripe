@@ -26,7 +26,7 @@
 
 require_once dirname(__FILE__).'/../../vendor/autoload.php';
 
-class MdstripeWebhooksModuleFrontController extends ModuleFrontController
+class MdstripeHookModuleFrontController extends ModuleFrontController
 {
     /** @var MDStripe $module */
     public $module;

@@ -24,7 +24,7 @@
 *}
 
 <div class="row">
-	<form id="stripe-payment-form" action="{$stripe_confirmation_page|escape:'htmlall':'UTF-8'}" method="POST">
+	<form id="stripe-form" action="{$stripe_confirmation_page|escape:'htmlall':'UTF-8'}" method="POST">
 		<input type="hidden" name="id_cart" value="{$id_cart|escape:'htmlall':'UTF-8'}">
 	</form>
 	<div class="col-xs-12 col-md-12">
@@ -48,7 +48,7 @@
 			image: '/img/logo.jpg',
 			locale: 'auto',
 			token: function (token) {
-				var $form = $('#stripe-payment-form');
+				var $form = $('#stripe-form');
 				// Insert the token into the form so it gets submitted to the server:
 				$form.append($('<input type="hidden" name="stripe-token" />').val(token.id));
 
