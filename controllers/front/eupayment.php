@@ -30,6 +30,12 @@ class MdstripeEupaymentModuleFrontController extends ModuleFrontController
 {
     public function initContent()
     {
+        if (!Module::isEnabled('mdstripe')) {
+            return;
+        }
+
+        require_once _PS_MODULE_DIR_.'mdstripe/mdstripe.php';
+
         parent::initContent();
         $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
 
@@ -50,12 +56,14 @@ class MdstripeEupaymentModuleFrontController extends ModuleFrontController
             'stripe_amount' => (int)$amount * 100,
             'stripe_confirmation_page' => $link->getModuleLink('mdstripe', 'validation'),
             'id_cart' => (int)$cart->id,
+            'stripe_secret_key' => Configuration::get(MDStripe::SECRET_KEY),
+            'stripe_publishable_key' => Configuration::get(MDStripe::PUBLISHABLE_KEY),
+            'stripe_locale' => MDStripe::getStripeLanguage($this->context->language->language_code),
+            'stripe_zipcode' => Configuration::get(MDStripe::ZIPCODE),
+            'stripe_bitcoin' => Configuration::get(MDStripe::BITCOIN),
+            'stripe_alipay' => Configuration::get(MDStripe::ALIPAY),
+            'stripe_shopname' => $this->context->shop->name,
         ));
-
-//        $cart = $this->context->cart;
-//        if (!$this->module->checkCurrency($cart))
-//            Tools::redirect('index.php?controller=order');
-
 
         $this->setTemplate('eupayment.tpl');
     }

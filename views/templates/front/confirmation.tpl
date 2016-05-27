@@ -40,4 +40,3 @@
 	</p>
 {/if}
 <hr />
-{ppp($stripe_charge)}

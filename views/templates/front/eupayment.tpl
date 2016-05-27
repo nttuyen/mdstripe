@@ -9,24 +9,23 @@
 		function openStripeHandler(e) {
 			// Open Checkout with further options:
 			handler.open({
-				name: '{$shopname|escape:'javascript':'UTF-8'}',
-				zipCode: true,
+				name: '{$stripe_shopname|escape:'javascript':'UTF-8'}',
+				zipCode: {if $stripe_zipcode}true{else}false{/if},
 				bitcoin: {if $stripe_bitcoin}true{else}false{/if},
 				alipay: {if $stripe_alipay}true{else}false{/if},
 				currency: '{$stripe_currency|escape:'javascript':'UTF-8'}',
 				amount: '{$stripe_amount|escape:'javascript':'UTF-8'}',
-				email: '{$stripe_email|escape:'javascript':'UTf-8'}'
+				email: '{$stripe_email|escape:'javascript':'UTf-8'}',
 			});
 			if (typeof e !== 'undefined' && typeof e !== 'function') {
-				console.log(typeof(e));
 				e.preventDefault();
 			}
 		}
 
 		var handler = StripeCheckout.configure({
-			key: 'pk_test_g4xEGpWUVb8DZSdophAK4jcD',
+			key: '{$stripe_publishable_key|escape:'javascript':'UTF-8'}',
 			image: '/img/logo.jpg',
-			locale: 'auto',
+			locale: '{$stripe_locale|escape:'javascript':'UTF-8'}',
 			token: function (token) {
 				var $form = $('#stripe-form');
 				// Insert the token into the form so it gets submitted to the server:

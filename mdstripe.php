@@ -32,6 +32,22 @@ require_once dirname(__FILE__).'/vendor/autoload.php';
 
 class MDStripe extends PaymentModule
 {
+    const MENU_SETTINGS = 1;
+
+    const ZIPCODE = 'MDSTRIPE_ZIPCODE';
+    const BITCOIN = 'MDSTRIPE_BITCOIN';
+    const ALIPAY = 'MDSTRIPE_ALIPAY';
+
+    const SECRET_KEY = 'MDSTRIPE_SECRET_KEY';
+    const PUBLISHABLE_KEY = 'MDSTRIPE_PUBLISHABLE_KEY';
+
+    public $module_url;
+
+    public static $stripe_languages = array('zh', 'nl', 'en', 'fr', 'de', 'it', 'ja', 'es');
+
+    /** @var int $menu Current menu */
+    public $menu;
+
     /**
      * MDStripe constructor.
      */
@@ -89,7 +105,7 @@ class MDStripe extends PaymentModule
         'displayPayment',
         'displayPaymentEU',
         'paymentReturn',
-        'displayPaymentTop'
+        'displayPaymentTop',
     );
 
     /**
@@ -97,109 +113,137 @@ class MDStripe extends PaymentModule
      */
     public function getContent()
     {
-        /**
-         * If values have been submitted in the form, process.
-         */
-        if (((bool)Tools::isSubmit('submitMdstripeModule')) == true) {
-            $this->postProcess();
+        $this->module_url = Context::getContext()->link->getAdminLink('AdminModules', false).'&token='.Tools::getAdminTokenLite('AdminModules').'&'.http_build_query(array('configure' => $this->name));
+
+        $output = '';
+
+        $this->initNavigation();
+
+        $output .= $this->postProcess();
+
+
+        $this->context->smarty->assign(array(
+            'module_dir' => $this->_path,
+            'menutabs' => $this->initNavigation()
+        ));
+
+        $output .= $this->context->smarty->fetch($this->local_path.'views/templates/admin/navbar.tpl');
+
+        switch (Tools::getValue('menu')) {
+            default:
+                $this->menu = self::MENU_SETTINGS;
+                return $output.$this->renderSettingsPage();
+                break;
         }
-
-        $this->context->smarty->assign('module_dir', $this->_path);
-
-        $output = $this->context->smarty->fetch($this->local_path.'views/templates/admin/configure.tpl');
-
-        return $output.$this->renderForm();
     }
 
     /**
-     * Create the form that will be displayed in the configuration of your module.
+     * Initialize navigation
+     *
+     * @return array Menu items
      */
-    protected function renderForm()
+    protected function initNavigation()
     {
-        $helper = new HelperForm();
-
-        $helper->show_toolbar = false;
-        $helper->table = $this->table;
-        $helper->module = $this;
-        $helper->default_form_language = $this->context->language->id;
-        $helper->allow_employee_form_lang = Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG', 0);
-
-        $helper->identifier = $this->identifier;
-        $helper->submit_action = 'submitMdstripeModule';
-        $helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false)
-            .'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name;
-        $helper->token = Tools::getAdminTokenLite('AdminModules');
-
-        $helper->tpl_vars = array(
-            'fields_value' => $this->getConfigFormValues(), /* Add values for your inputs */
-            'languages' => $this->context->controller->getLanguages(),
-            'id_language' => $this->context->language->id,
+        $menu = array(
+            self::MENU_SETTINGS => array(
+                'short' => $this->l('Settings'),
+                'desc' => $this->l('Module settings'),
+                'href' => $this->module_url.'&menu='.self::MENU_SETTINGS,
+                'active' => false,
+                'icon' => 'icon-gears'
+            ),
         );
 
-        return $helper->generateForm(array($this->getConfigForm()));
+        switch (Tools::getValue('menu')) {
+            default:
+                $this->menu = self::MENU_SETTINGS;
+                $menu[self::MENU_SETTINGS]['active'] = true;
+                break;
+        }
+
+        return $menu;
     }
 
-    /**
-     * Create the structure of your form.
-     */
-    protected function getConfigForm()
+    protected function renderSettingsPage()
+    {
+        $output = '';
+
+        $this->context->smarty->assign(array(
+            'module_url' => $this->module_url
+        ));
+
+        $output .= $this->context->smarty->fetch($this->local_path.'views/templates/admin/configure.tpl');
+
+        $output .= $this->renderGeneralOptions();
+
+        return $output;
+    }
+
+    protected function renderGeneralOptions()
+    {
+        $helper = new HelperOptions();
+        $helper->module = $this;
+        $helper->token = Tools::getAdminTokenLite('AdminModules');
+        $helper->currentIndex = AdminController::$currentIndex.'&configure='.$this->name;
+        $helper->title = $this->displayName;
+        $helper->show_toolbar = false;
+
+        return $helper->generateOptions($this->getGeneralOptions());
+    }
+
+    protected function getGeneralOptions()
     {
         return array(
-            'form' => array(
-                'legend' => array(
-                'title' => $this->l('Settings'),
-                'icon' => 'icon-cogs',
-                ),
-                'input' => array(
-                    array(
-                        'type' => 'switch',
-                        'label' => $this->l('Live mode'),
-                        'name' => 'MDSTRIPE_LIVE_MODE',
-                        'is_bool' => true,
-                        'desc' => $this->l('Use this module in live mode'),
-                        'values' => array(
-                            array(
-                                'id' => 'active_on',
-                                'value' => true,
-                                'label' => $this->l('Enabled')
-                            ),
-                            array(
-                                'id' => 'active_off',
-                                'value' => false,
-                                'label' => $this->l('Disabled')
-                            )
-                        ),
-                    ),
-                    array(
-                        'col' => 3,
+            'locales' => array(
+                'title' => $this->l('API Settings'),
+                'icon' => 'icon-server',
+                'fields' => array(
+                    self::SECRET_KEY => array(
+                        'title' => $this->l('Secret key'),
                         'type' => 'text',
-                        'prefix' => '<i class="icon icon-envelope"></i>',
-                        'desc' => $this->l('Enter a valid email address'),
-                        'name' => 'MDSTRIPE_ACCOUNT_EMAIL',
-                        'label' => $this->l('Email'),
+                        'name' => self::SECRET_KEY,
+                        'value' => Configuration::get(self::SECRET_KEY),
+                        'validation' => 'isString',
+                        'cast' => 'strval',
                     ),
-                    array(
-                        'type' => 'password',
-                        'name' => 'MDSTRIPE_ACCOUNT_PASSWORD',
-                        'label' => $this->l('Password'),
+                    self::PUBLISHABLE_KEY => array(
+                        'title' => $this->l('Publishable key'),
+                        'type' => 'text',
+                        'name' => self::PUBLISHABLE_KEY,
+                        'value' => Configuration::get(self::PUBLISHABLE_KEY),
+                        'validation' => 'isString',
+                        'cast' => 'strval',
+                    ),
+                    self::ZIPCODE => array(
+                        'title' => $this->l('Zipcode / postcode verification'),
+                        'type' => 'bool',
+                        'name' => self::ZIPCODE,
+                        'value' => Configuration::get(self::ZIPCODE),
+                        'validation' => 'isBool',
+                        'cast' => 'intval',
+                    ),
+                    self::BITCOIN=> array(
+                        'title' => $this->l('Accept bitcoins'),
+                        'type' => 'bool',
+                        'name' => self::BITCOIN,
+                        'value' => Configuration::get(self::BITCOIN),
+                        'validation' => 'isBool',
+                        'cast' => 'intval',
+                    ),
+                    self::ALIPAY => array(
+                        'title' => $this->l('Accept Alipay'),
+                        'type' => 'bool',
+                        'name' => self::ALIPAY,
+                        'value' => Configuration::get(self::ALIPAY),
+                        'validation' => 'isBool',
+                        'cast' => 'intval',
                     ),
                 ),
                 'submit' => array(
                     'title' => $this->l('Save'),
+                    'class' => 'button'
                 ),
             ),
-        );
-    }
-
-    /**
-     * Set values for the inputs.
-     */
-    protected function getConfigFormValues()
-    {
-        return array(
-            'MDSTRIPE_LIVE_MODE' => Configuration::get('MDSTRIPE_LIVE_MODE', true),
-            'MDSTRIPE_ACCOUNT_EMAIL' => Configuration::get('MDSTRIPE_ACCOUNT_EMAIL', 'contact@prestashop.com'),
-            'MDSTRIPE_ACCOUNT_PASSWORD' => Configuration::get('MDSTRIPE_ACCOUNT_PASSWORD', null),
         );
     }
 
@@ -208,10 +252,75 @@ class MDStripe extends PaymentModule
      */
     protected function postProcess()
     {
-        $form_values = $this->getConfigFormValues();
+        if ($this->menu == self::MENU_SETTINGS && Tools::isSubmit('submitOptionsconfiguration')) {
+            $this->postProcessGeneralOptions();
+        }
+    }
 
-        foreach (array_keys($form_values) as $key) {
-            Configuration::updateValue($key, Tools::getValue($key));
+    /**
+     * Process ImageMagickOptions
+     */
+    protected function postProcessGeneralOptions()
+    {
+        $secret_key = Tools::getValue(self::SECRET_KEY);
+        $publishable_key = Tools::getValue(self::PUBLISHABLE_KEY);
+        $zipcode = (bool)Tools::getValue(self::ZIPCODE);
+        $bitcoin = (bool)Tools::getValue(self::BITCOIN);
+        $alipay = (bool)Tools::getValue(self::ALIPAY);
+
+        if (Configuration::get('PS_MULTISHOP_FEATURE_ACTIVE')) {
+            if (Shop::getContext() == Shop::CONTEXT_ALL) {
+                $this->updateAllValue(self::SECRET_KEY, $secret_key);
+                $this->updateAllValue(self::PUBLISHABLE_KEY, $publishable_key);
+                $this->updateAllValue(self::ZIPCODE, $zipcode);
+                $this->updateAllValue(self::BITCOIN, $bitcoin);
+                $this->updateAllValue(self::ALIPAY, $alipay);
+            } elseif (is_array(Tools::getValue('multishopOverrideOption'))) {
+                $id_shop_group = (int)Shop::getGroupFromShop($this->getShopId(), true);
+                $multishop_override = Tools::getValue('multishopOverrideOption');
+                if (Shop::getContext() == Shop::CONTEXT_GROUP) {
+                    foreach (Shop::getShops(false, $this->getShopId()) as $id_shop) {
+                        if ($multishop_override[self::SECRET_KEY]) {
+                            Configuration::updateValue(self::SECRET_KEY, $secret_key, false, $id_shop_group, $id_shop);
+                        }
+                        if ($multishop_override[self::PUBLISHABLE_KEY]) {
+                            Configuration::updateValue(self::PUBLISHABLE_KEY, $publishable_key, false, $id_shop_group, $id_shop);
+                        }
+                        if ($multishop_override[self::ZIPCODE]) {
+                            Configuration::updateValue(self::ZIPCODE, $zipcode, false, $id_shop_group, $id_shop);
+                        }
+                        if ($multishop_override[self::BITCOIN]) {
+                            Configuration::updateValue(self::BITCOIN, $bitcoin, false, $id_shop_group, $id_shop);
+                        }
+                        if ($multishop_override[self::ALIPAY]) {
+                            Configuration::updateValue(self::ALIPAY, $alipay, false, $id_shop_group, $id_shop);
+                        }
+                    }
+                } else {
+                    $id_shop = (int)$this->getShopId();
+                    if ($multishop_override[self::SECRET_KEY]) {
+                        Configuration::updateValue(self::SECRET_KEY, $secret_key, false, $id_shop_group, $id_shop);
+                    }
+                    if ($multishop_override[self::PUBLISHABLE_KEY]) {
+                        Configuration::updateValue(self::PUBLISHABLE_KEY, $publishable_key, false, $id_shop_group, $id_shop);
+                    }
+                    if ($multishop_override[self::ZIPCODE]) {
+                        Configuration::updateValue(self::ZIPCODE, $zipcode, false, $id_shop_group, $id_shop);
+                    }
+                    if ($multishop_override[self::BITCOIN]) {
+                        Configuration::updateValue(self::BITCOIN, $bitcoin, false, $id_shop_group, $id_shop);
+                    }
+                    if ($multishop_override[self::ALIPAY]) {
+                        Configuration::updateValue(self::ALIPAY, $alipay, false, $id_shop_group, $id_shop);
+                    }
+                }
+            }
+        } else {
+            Configuration::updateValue(self::SECRET_KEY, $secret_key);
+            Configuration::updateValue(self::PUBLISHABLE_KEY, $publishable_key);
+            Configuration::updateValue(self::ZIPCODE, $zipcode);
+            Configuration::updateValue(self::BITCOIN, $bitcoin);
+            Configuration::updateValue(self::ALIPAY, $alipay);
         }
     }
 
@@ -271,10 +380,16 @@ class MDStripe extends PaymentModule
         return $this->display(__FILE__, 'views/templates/hook/payment.tpl');
     }
 
+    /**
+     * Hook to Advcanced EU checkout
+     *
+     * @param $params Hook parameters
+     * @return array Smarty variables
+     */
     public function hookDisplayPaymentEU($params)
     {
         if (!$this->active) {
-            return '';
+            return array();
         }
 
         $payment_options = array(
@@ -313,6 +428,8 @@ class MDStripe extends PaymentModule
     }
 
     /**
+     * Hook to the top a payment page
+     *
      * @param $params
      * @return string
      */
@@ -321,5 +438,100 @@ class MDStripe extends PaymentModule
         $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
 
         return '';
+    }
+
+    /**
+     * Update configuration value in ALL contexts
+     *
+     * @param string $key Configuration key
+     * @param mixed $values Configuration values, can be string or array with id_lang as key
+     * @param bool $html Contains HTML
+     */
+    public function updateAllValue($key, $values, $html = false)
+    {
+        foreach (Shop::getShops() as $shop) {
+            Configuration::updateValue($key, $values, $html, $shop['id_shop_group'], $shop['id_shop']);
+        }
+        Configuration::updateGlobalValue($key, $values, $html);
+    }
+
+    /**
+     * Get the Shop ID of the current context
+     * Retrieves the Shop ID from the cookie
+     *
+     * @return int Shop ID
+     */
+    public function getShopId()
+    {
+        $cookie = Context::getContext()->cookie->getFamily('shopContext');
+
+        return (int)Tools::substr($cookie['shopContext'], 2, count($cookie['shopContext']));
+    }
+
+    /**
+     * Get the Stripe language
+     *
+     * @param string $locale IETF locale
+     * @return string Stripe language
+     */
+    public static function getStripeLanguage($locale)
+    {
+        $language_iso = Tools::strtolower(Tools::substr($locale, 0, 2));
+
+        if (in_array($language_iso, self::$stripe_languages)) {
+            return $language_iso;
+        }
+
+        return 'en';
+    }
+
+    /**
+     * Detect Back Office settings
+     *
+     * @return array Array with error message strings
+     */
+    protected function detectBOSettingsErrors()
+    {
+        $lang_id = Context::getContext()->language->id;
+        $output = array();
+        if (Configuration::get('PS_DISABLE_NON_NATIVE_MODULE')) {
+            $output[] = $this->l('Non native modules such as this one are disabled. Go to').' "'.
+                $this->getTabName('AdminParentPreferences', $lang_id).
+                ' > '.
+                $this->getTabName('AdminPerformance', $lang_id).
+                '" '.$this->l('and make sure that the option').' "'.
+                Translate::getAdminTranslation('Disable non PrestaShop modules', 'AdminPerformance').
+                '" '.$this->l('is set to').' "'.
+                Translate::getAdminTranslation('No', 'AdminPerformance').
+                '"'.$this->l('.').'<br />';
+        }
+        return $output;
+    }
+
+    /**
+     * Get Tab name from database
+     * @param $class_name string Class name of tab
+     * @param $id_lang int Language id
+     *
+     * @return string Returns the localized tab name
+     */
+    protected function getTabName($class_name, $id_lang)
+    {
+        if ($class_name == null || $id_lang == null) {
+            return '';
+        }
+
+        $sql = new DbQuery();
+        $sql->select('tl.`name`');
+        $sql->from('tab_lang', 'tl');
+        $sql->innerJoin('tab', 't', 't.`id_tab` = tl.`id_tab`');
+        $sql->where('t.`class_name` = \''.pSQL($class_name).'\'');
+        $sql->where('tl.`id_lang` = '.(int)$id_lang);
+
+        try {
+            return (string)Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+        } catch (Exception $e) {
+            return $this->l('Unknown');
+        }
     }
 }
