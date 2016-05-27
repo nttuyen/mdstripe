@@ -453,7 +453,7 @@ class MDStripe extends PaymentModule
         $this->smarty->assign(array(
             'stripe_email' => $stripe_email,
             'stripe_currency' => $currency->iso_code,
-            'stripe_amount' => (int)$amount * 100,
+            'stripe_amount' => (int)($amount * 100),
             'id_cart' => (int)$cart->id,
             'stripe_secret_key' => Configuration::get(self::SECRET_KEY),
             'stripe_publishable_key' => Configuration::get(self::PUBLISHABLE_KEY),
