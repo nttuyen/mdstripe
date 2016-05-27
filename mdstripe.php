@@ -45,7 +45,7 @@ class MDStripe extends PaymentModule
 
         $this->bootstrap = true;
 
-        $this->controllers = array('webhooks', 'confirmation');
+        $this->controllers = array('webhooks', 'validation');
 
         parent::__construct();
 
@@ -82,7 +82,15 @@ class MDStripe extends PaymentModule
         return parent::uninstall();
     }
 
-    public $hooks = array('header', 'backOfficeHeader', 'payment', 'paymentReturn', 'displayPaymentTop');
+    /** @var array Hooks */
+    public $hooks = array(
+        'header',
+        'backOfficeHeader',
+        'displayPayment',
+        'displayPaymentEU',
+        'paymentReturn',
+        'displayPaymentTop'
+    );
 
     /**
      * Load the configuration form
@@ -256,43 +264,62 @@ class MDStripe extends PaymentModule
             'stripe_email' => $stripe_email,
             'stripe_currency' => $currency->iso_code,
             'stripe_amount' => (int)$amount * 100,
-            'stripe_confirmation_page' => $link->getModuleLink($this->name, 'confirmation'),
+            'stripe_confirmation_page' => $link->getModuleLink($this->name, 'validation'),
             'id_cart' => (int)$cart->id,
         ));
 
         return $this->display(__FILE__, 'views/templates/hook/payment.tpl');
     }
-//
-//    /**
-//     * This hook is used to display the order confirmation page.
-//     */
-//    public function hookPaymentReturn($params)
-//    {
-//        if ($this->active == false) {
-//            return;
-//        }
-//
-//        /** @var Order $order */
-//        $order = $params['objOrder'];
-//
-//        if ($order->getCurrentOrderState()->id != Configuration::get('PS_OS_ERROR')) {
-//            $this->smarty->assign('status', 'ok');
-//        }
-//
-//        $this->smarty->assign(array(
-//            'id_order' => $order->id,
-//            'reference' => $order->reference,
-//            'params' => $params,
-//            'total' => Tools::displayPrice($params['total_to_pay'], $params['currencyObj'], false),
-//        ));
-//
-//        return $this->display(__FILE__, 'views/templates/hook/confirmation.tpl');
-//    }
 
-    public function hookDisplayPaymentTop()
+    public function hookDisplayPaymentEU($params)
     {
-        $this->context->controller->addJS('https://js.stripe.com/v2/');
+        if (!$this->active) {
+            return '';
+        }
 
-        return $this->context->smarty->fetch($this->local_path.'views/templates/hook/stripebtn.tpl');
+        $payment_options = array(
+            'cta_text' => $this->l('Pay with Stripe'),
+            'logo' => Media::getMediaPath($this->local_path.'views/img/stripebtnlogo.png'),
+            'action' => $this->context->link->getModuleLink($this->name, 'eupayment', array(), true),
+        );
+
+        return $payment_options;
+    }
+
+    /**
+     * This hook is used to display the order confirmation page.
+     */
+    public function hookPaymentReturn($params)
+    {
+        if ($this->active == false) {
+            return '';
+        }
+
+        /** @var Order $order */
+        $order = $params['objOrder'];
+
+        if ($order->getCurrentOrderState()->id != Configuration::get('PS_OS_ERROR')) {
+            $this->smarty->assign('status', 'ok');
+        }
+
+        $this->smarty->assign(array(
+            'id_order' => $order->id,
+            'reference' => $order->reference,
+            'params' => $params,
+            'total' => Tools::displayPrice($params['total_to_pay'], $params['currencyObj'], false),
+        ));
+
+        return $this->display(__FILE__, 'views/templates/front/confirmation.tpl');
+    }
+
+    /**
+     * @param $params
+     * @return string
+     */
+    public function hookDisplayPaymentTop($params)
+    {
+        $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
+
+        return '';
     }
 }

@@ -42,7 +42,6 @@
 			{/if}
 		</p>
 	</div>
-	<script type="text/javascript" src="https://checkout.stripe.com/v2/checkout.js"></script>
 	<script type="text/javascript">
 		var handler = StripeCheckout.configure({
 			key: 'pk_test_g4xEGpWUVb8DZSdophAK4jcD',
