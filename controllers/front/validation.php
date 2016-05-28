@@ -26,15 +26,15 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
 
     public function postProcess()
     {
-        if ((Tools::isSubmit('id_cart') == false) || (Tools::isSubmit('stripe-token') == false)) {
+        if ((Tools::isSubmit('mdstripe-id_cart') == false) || (Tools::isSubmit('mdstripe-token') == false)) {
             $this->errors[] = $this->module->l('An error occurred. Please contact us for more information.');
             $this->setTemplate('error.tpl');
 
             return false;
         }
 
-        $token = Tools::getValue('stripe-token');
-        $id_cart = Tools::getValue('id_cart');
+        $token = Tools::getValue('mdstripe-token');
+        $id_cart = Tools::getValue('mdstripe-id_cart');
 
         $cart = new Cart((int)$id_cart);
         $customer = new Customer((int)$cart->id_customer);

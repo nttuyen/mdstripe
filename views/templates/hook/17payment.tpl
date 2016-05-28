@@ -17,10 +17,10 @@
 *}
 <div class="row">
 	<form id="stripe-form" action="{$stripe_confirmation_page|escape:'htmlall':'UTF-8'}" method="POST">
-		<input type="hidden" name="mdstripe-id_cart" value="{$id_cart|escape:'htmlall':'UTF-8'}">
+		<input type="hidden" name="id_cart" value="{$id_cart|escape:'htmlall':'UTF-8'}">
 	</form>
-	<a id="mdstripe_payment_link" href="#" title="{l s='Pay with Stripe' mod='mdstripe'}" class="btn btn-default">
-		{l s='Pay with Stripe' mod='mdstripe'}
+	<a id="mdstripe_payment_link" href="#" title="{l s='Pay with Stripe' mod='mdstripe'}" class="btn btn-info">
+		<i class="material-icons">&#xE870;</i> <span class="stripe-call-to-action">{l s='Pay with Stripe' mod='mdstripe'}</span>
 	</a>
 	<script type="text/javascript">
 		function openStripeHandler(e) {
@@ -44,16 +44,17 @@
 			image: '/img/logo.jpg',
 			locale: '{$stripe_locale|escape:'javascript':'UTF-8'}',
 			token: function (token) {
-				var $form = $('#stripe-form');
 				// Insert the token into the form so it gets submitted to the server:
-				$form.append($('<input type="hidden" name="mdstripe-token" />').val(token.id));
+				$stripeinput = $('input[name=mdstripe-token]');
+				$stripeinput.val(token.id);
 
-				// Submit the form:
-				$form.get(0).submit();
+				$button = $('#mdstripe_payment_link');
+				$button.removeClass('btn-primary');
+				$button.addClass('btn-success');
+				$button.find('.stripe-call-to-action').html('{l s='Change card' mod='mdstripe'}');
 			}
 		});
 
-		$(document).ready(openStripeHandler);
 		$('#mdstripe_payment_link').click(openStripeHandler);
 	</script>
 </div>

@@ -23,6 +23,8 @@ if (!defined('_PS_VERSION_')) {
 
 require_once dirname(__FILE__).'/vendor/autoload.php';
 
+use PrestaShop\PrestaShop\Core\Payment\PaymentOption;
+
 class MDStripe extends PaymentModule
 {
     const MENU_SETTINGS = 1;
@@ -44,7 +46,7 @@ class MDStripe extends PaymentModule
     const TLS_LAST_CHECK = 'MDSTRIPE_TLS_LAST_CHECK';
 
     const ENUM_TLS_OK = 1;
-    const ENUM_TLS_ERROR = 0;
+    const ENUM_TLS_ERROR = -1;
 
     public $module_url;
 
@@ -115,6 +117,7 @@ class MDStripe extends PaymentModule
         'backOfficeHeader',
         'displayPayment',
         'displayPaymentEU',
+        'paymentOptions',
         'paymentReturn',
         'displayPaymentTop',
     );
@@ -124,6 +127,7 @@ class MDStripe extends PaymentModule
      */
     public function getContent()
     {
+        $this->registerHook('paymentOptions');
         $output = '';
 
         $this->initNavigation();
@@ -221,7 +225,7 @@ class MDStripe extends PaymentModule
                         'name' => self::SECRET_KEY,
                         'value' => Configuration::get(self::SECRET_KEY),
                         'validation' => 'isString',
-                        'cast' => 'strval',
+                        'cast' => 'strval'
                     ),
                     self::PUBLISHABLE_KEY => array(
                         'title' => $this->l('Publishable key'),
@@ -479,7 +483,7 @@ class MDStripe extends PaymentModule
             $stripe_amount = (int)($stripe_amount * 100);
         }
         
-        $this->smarty->assign(array(
+        $this->context->smarty->assign(array(
             'stripe_email' => $stripe_email,
             'stripe_currency' => $currency->iso_code,
             'stripe_amount' => $stripe_amount,
@@ -516,6 +520,61 @@ class MDStripe extends PaymentModule
         );
 
         return $payment_options;
+    }
+
+    public function hookPaymentOptions($params)
+    {
+        if (!$this->active) {
+            return array();
+        }
+
+        /** @var Cookie $email */
+        $cookie = $params['cookie'];
+        $stripe_email = $cookie->email;
+
+        /** @var Cart $cart */
+        $cart = $params['cart'];
+        $currency = new Currency($cart->id_currency);
+
+        $link = $this->context->link;
+
+        $stripe_amount = $cart->getOrderTotal();
+        if (!in_array(Tools::strtolower($currency->iso_code), self::$zero_decimal_currencies)) {
+            $stripe_amount = (int)($stripe_amount * 100);
+        }
+
+        $this->context->smarty->assign(array(
+            'stripe_email' => $stripe_email,
+            'stripe_currency' => $currency->iso_code,
+            'stripe_amount' => $stripe_amount,
+            'id_cart' => (int)$cart->id,
+            'stripe_secret_key' => Configuration::get(self::SECRET_KEY),
+            'stripe_publishable_key' => Configuration::get(self::PUBLISHABLE_KEY),
+            'stripe_locale' => self::getStripeLanguage($this->context->language->language_code),
+            'stripe_zipcode' => (bool)Configuration::get(self::ZIPCODE),
+            'stripe_bitcoin' => (bool)Configuration::get(self::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
+            'stripe_alipay' => (bool)Configuration::get(self::ALIPAY),
+            'stripe_shopname' => $this->context->shop->name,
+            'stripe_confirmation_page' => $link->getModuleLink($this->name, 'validation'),
+        ));
+
+        $externalOption = new PaymentOption();
+        $externalOption->setCallToActionText($this->l('Pay with Stripe'))
+            ->setAction($this->context->link->getModuleLink($this->name, 'validation', array(), true))
+            ->setInputs(array(
+                'token' => array(
+                    'name' => 'mdstripe-token',
+                    'type' => 'hidden',
+                    'value' => '',
+                ),
+                'id_cart' => array(
+                    'name' => 'mdstripe-id_cart',
+                    'type' => 'hidden',
+                    'value' => $cart->id,
+                ),
+            ))
+            ->setAdditionalInformation($this->context->smarty->fetch('module:mdstripe/views/templates/hook/17payment.tpl'));
+        return array($externalOption);
     }
 
     /**
@@ -556,6 +615,11 @@ class MDStripe extends PaymentModule
         $this->context->controller->addCSS($this->local_path.'/views/css/front.css');
 
         return '';
+    }
+
+    public function hookDisplayHeader($params)
+    {
+        $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
     }
 
     /**
