@@ -40,6 +40,13 @@ class MDStripe extends PaymentModule
 
     const OPTIONS_MODULE_SETTINGS = 1;
 
+    const TLS_OK = 'MDSTRIPE_TLS_OK';
+    const TLS_LAST_CHECK = 'MDSTRIPE_TLS_LAST_CHECK';
+
+    const ENUM_TLS_OK = 1;
+    const ENUM_TLS_ERROR = 0;
+    const ENUM_TLS_UNKNOWN = 2;
+
     public $module_url;
 
     /** @var array Supported languages */
@@ -118,11 +125,14 @@ class MDStripe extends PaymentModule
      */
     public function getContent()
     {
-        $this->module_url = Context::getContext()->link->getAdminLink('AdminModules', false).'&token='.Tools::getAdminTokenLite('AdminModules').'&'.http_build_query(array('configure' => $this->name));
-
         $output = '';
 
         $this->initNavigation();
+
+        $this->module_url = Context::getContext()->link->getAdminLink('AdminModules', false).'&token='.Tools::getAdminTokenLite('AdminModules').'&'.
+            http_build_query(array(
+                'configure' => $this->name,
+            ));
 
         $output .= $this->postProcess();
 
@@ -174,10 +184,12 @@ class MDStripe extends PaymentModule
         $output = '';
 
         $this->context->smarty->assign(array(
-            'module_url' => $this->module_url
+            'module_url' => $this->module_url.'&menu='.self::MENU_SETTINGS,
+            'tls_ok' => (int)Configuration::get(self::TLS_OK)
         ));
 
         $output .= $this->context->smarty->fetch($this->local_path.'views/templates/admin/configure.tpl');
+        $output .= $this->context->smarty->fetch($this->local_path.'views/templates/admin/tlscheck.tpl');
 
         $output .= $this->renderGeneralOptions();
 
@@ -317,9 +329,17 @@ class MDStripe extends PaymentModule
      */
     protected function postProcess()
     {
-        if ($this->menu == self::MENU_SETTINGS && Tools::isSubmit('submitOptionsconfiguration')) {
-            $this->postProcessGeneralOptions();
-            $this->postProcessOrderOptions();
+        $output = '';
+
+        if ($this->menu == self::MENU_SETTINGS) {
+            if (Tools::isSubmit('submitOptionsconfiguration')) {
+                $output .= $this->postProcessGeneralOptions();
+                $output .= $this->postProcessOrderOptions();
+            }
+
+            if (Tools::isSubmit('checktls') && (bool)Tools::getValue('checktls')) {
+                $output .= $this->tlsCheck();
+            }
         }
     }
 
@@ -631,6 +651,22 @@ class MDStripe extends PaymentModule
             return (string)Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
         } catch (Exception $e) {
             return $this->l('Unknown');
+        }
+    }
+
+    protected function tlsCheck()
+    {
+        $curl = curl_init();
+        curl_setopt_array($curl, array(
+            CURLOPT_RETURNTRANSFER => 1,
+            CURLOPT_URL => 'https://tlstest.paypal.com/'
+        ));
+        $result = curl_exec($curl);
+
+        if ($result == 'PayPal_Connection_OK') {
+            $this->updateAllValue(self::TLS_OK, self::ENUM_TLS_OK);
+        } else {
+            $this->updateAllValue(self::TLS_OK, self::ENUM_TLS_ERROR);
         }
     }
 }
