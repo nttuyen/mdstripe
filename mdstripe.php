@@ -45,7 +45,6 @@ class MDStripe extends PaymentModule
 
     const ENUM_TLS_OK = 1;
     const ENUM_TLS_ERROR = 0;
-    const ENUM_TLS_UNKNOWN = 2;
 
     public $module_url;
 
