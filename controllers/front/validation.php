@@ -47,14 +47,26 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
 
         \Stripe\Stripe::setApiKey($stripe['secret_key']);
 
-        $stripe_customer = \Stripe\Customer::create(array(
-            'email' => $customer->email,
-            'source' => $token
-        ));
+        try {
+            $stripe_customer = \Stripe\Customer::create(array(
+                'email' => $customer->email,
+                'source' => $token
+            ));
+        } catch (Stripe\Error\InvalidRequest $e) {
+            $this->errors[] = $e->getMessage();
+            $this->setTemplate('error.tpl');
+
+            return false;
+        }
+
+        $stripe_amount = $cart->getOrderTotal();
+        if (!in_array(Tools::strtolower($currency->iso_code), MDStripe::$zero_decimal_currencies)) {
+            $stripe_amount = (int)($stripe_amount * 100);
+        }
 
         $stripe_charge = \Stripe\Charge::create(array(
             'customer' => $stripe_customer->id,
-            'amount' => (int)($cart->getOrderTotal(true) * 100),
+            'amount' => $stripe_amount,
             'currency' => $currency->iso_code
         ));
 

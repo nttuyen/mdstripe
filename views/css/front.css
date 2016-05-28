@@ -1,4 +1,4 @@
-{*
+/**
  * 2016 Michael Dekker
  *
  * NOTICE OF LICENSE
@@ -14,13 +14,27 @@
  *  @author    Michael Dekker <prestashop@michaeldekker.com>
  *  @copyright 2016 Michael Dekker
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
-*}
+*/
 
-<div>
-	<h3>{l s='An error occurred' mod='mdstripe'}:</h3>
-	<ul class="alert alert-danger">
-		{foreach from=$errors item='error'}
-			<li>{$error|escape:'htmlall':'UTF-8'}</li>
-		{/foreach}
-	</ul>
-</div>
+#mdstripe_payment_button a {
+	padding: 10px 10px 10px 10px;
+	background-color: #FBFBFB;
+}
+
+#mdstripe_payment_button a:hover {
+	background-color: #f6f6f6;
+}
+
+#mdstripe_payment_button a:after {
+	display: block;
+	content: "\f054";
+	position: absolute;
+	right: 15px;
+	margin-top: -11px;
+	top: 50%;
+	font-family: "FontAwesome";
+	font-size: 25px;
+	height: 22px;
+	width: 14px;
+	color: #777777;
+}

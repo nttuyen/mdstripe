@@ -39,14 +39,19 @@ class MdstripeEupaymentModuleFrontController extends ModuleFrontController
         /** @var Cart $cart */
         $cart = $this->context->cart;
         $currency = new Currency($cart->id_currency);
-        $amount = $cart->getOrderTotal(true);
 
         $link = $this->context->link;
+
+        $stripe_amount = $cart->getOrderTotal();
+        if (!in_array(Tools::strtolower($currency->iso_code), MDStripe::$zero_decimal_currencies)) {
+            $stripe_amount = (int)($stripe_amount * 100);
+        }
+
 
         $this->context->smarty->assign(array(
             'stripe_email' => $stripe_email,
             'stripe_currency' => $currency->iso_code,
-            'stripe_amount' => (int)($amount * 100),
+            'stripe_amount' => $stripe_amount,
             'stripe_confirmation_page' => $link->getModuleLink('mdstripe', 'validation'),
             'id_cart' => (int)$cart->id,
             'stripe_secret_key' => Configuration::get(MDStripe::SECRET_KEY),

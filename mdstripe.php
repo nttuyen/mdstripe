@@ -42,7 +42,13 @@ class MDStripe extends PaymentModule
 
     public $module_url;
 
+    /** @var array Supported languages */
     public static $stripe_languages = array('zh', 'nl', 'en', 'fr', 'de', 'it', 'ja', 'es');
+
+    /** @var array Supported zero-decimal currencies */
+    public static $zero_decimal_currencies =
+        array('bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga', 'pyg', 'rwf',
+        'vdn', 'vuv', 'xaf', 'xof', 'xpf');
 
     /** @var int $menu Current menu */
     public $menu;
@@ -446,14 +452,18 @@ class MDStripe extends PaymentModule
         /** @var Cart $cart */
         $cart = $params['cart'];
         $currency = new Currency($cart->id_currency);
-        $amount = $cart->getOrderTotal(true);
 
         $link = $this->context->link;
+
+        $stripe_amount = $cart->getOrderTotal();
+        if (!in_array(Tools::strtolower($currency->iso_code), self::$zero_decimal_currencies)) {
+            $stripe_amount = (int)($stripe_amount * 100);
+        }
         
         $this->smarty->assign(array(
             'stripe_email' => $stripe_email,
             'stripe_currency' => $currency->iso_code,
-            'stripe_amount' => (int)($amount * 100),
+            'stripe_amount' => $stripe_amount,
             'id_cart' => (int)$cart->id,
             'stripe_secret_key' => Configuration::get(self::SECRET_KEY),
             'stripe_publishable_key' => Configuration::get(self::PUBLISHABLE_KEY),
@@ -524,6 +534,7 @@ class MDStripe extends PaymentModule
     public function hookDisplayPaymentTop($params)
     {
         $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
+        $this->context->controller->addCSS($this->local_path.'/views/css/front.css');
 
         return '';
     }
