@@ -18,6 +18,7 @@
  */
 
 require_once dirname(__FILE__).'/../../vendor/autoload.php';
+require_once dirname(__FILE__).'/../../classes/autoload.php';
 
 class MdstripeValidationModuleFrontController extends ModuleFrontController
 {
@@ -79,8 +80,7 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
              */
             $currency_id = (int)Context::getContext()->currency->id;
 
-            $this->module->validateOrder($id_cart, $payment_status, $cart->getOrderTotal(), 'Stripe', $message, array(),
-                $currency_id, false, $cart->secure_key);
+            $this->module->validateOrder($id_cart, $payment_status, $cart->getOrderTotal(), 'Stripe', $message, array(), $currency_id, false, $cart->secure_key);
 
             /**
              * If the order has been validated we try to retrieve it
@@ -88,6 +88,15 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
             $id_order = Order::getOrderByCartId((int)$cart->id);
 
             if ($id_order) {
+                // Log transaction
+                $stripe_transaction = new StripeTransaction();
+                $stripe_transaction->card_last_digits = (int)$stripe_charge->source['last4'];
+                $stripe_transaction->charge_token = $token;
+                $stripe_transaction->amount = $cart->getOrderTotal();
+                $stripe_transaction->id_order = $id_order;
+                $stripe_transaction->type = StripeTransaction::TYPE_CHARGE;
+                $stripe_transaction->add();
+
                 /**
                  * The order has been placed so we redirect the customer on the confirmation page.
                  */

@@ -23,6 +23,7 @@ if (!defined('_PS_VERSION_')) {
 
 require_once dirname(__FILE__).'/vendor/autoload.php';
 
+/** @noinspection PhpUndefinedNamespaceInspection */
 use PrestaShop\PrestaShop\Core\Payment\PaymentOption;
 
 class MDStripe extends PaymentModule
@@ -36,8 +37,11 @@ class MDStripe extends PaymentModule
     const SECRET_KEY = 'MDSTRIPE_SECRET_KEY';
     const PUBLISHABLE_KEY = 'MDSTRIPE_PUBLISHABLE_KEY';
 
-    const STATUS_VALIDATED = 'MDSTRIPE_STATUS_VALIDATED';
-    const STATUS_REFUND = 'MDSTRIPE_STATUS_REFUND';
+    const STATUS_VALIDATED = 'MDSTRIPE_STAT_VALIDATED';
+    const STATUS_PARTIAL_REFUND = 'MDSTRIPE_STAT_PART_REFUND';
+    const USE_STATUS_PARTIAL_REFUND = 'MDSTRIPE_USE_STAT_PART_REFUND';
+    const STATUS_REFUND = 'MDSTRIPE_STAT_REFUND';
+    const USE_STATUS_REFUND = 'MDSTRIPE_USE_STAT_REFUND';
     const GENERATE_CREDIT_SLIP = 'MDSTRIPE_CREDIT_SLIP';
 
     const OPTIONS_MODULE_SETTINGS = 1;
@@ -97,6 +101,8 @@ class MDStripe extends PaymentModule
 
             return false;
         }
+
+        require_once dirname(__FILE__).'/sql/install.php';
 
         return parent::install();
     }
@@ -277,6 +283,11 @@ class MDStripe extends PaymentModule
             $status_validated = (int)Configuration::get('PS_OS_PAYMENT');
         }
 
+        $status_partial_refund = (int)Configuration::get(self::STATUS_PARTIAL_REFUND);
+        if ($status_partial_refund < 1) {
+            $status_partial_refund = (int)Configuration::get('PS_OS_REFUND');
+        }
+
         $status_refund = (int)Configuration::get(self::STATUS_REFUND);
         if ($status_refund < 1) {
             $status_refund = (int)Configuration::get('PS_OS_REFUND');
@@ -298,6 +309,33 @@ class MDStripe extends PaymentModule
                         'validation' => 'isString',
                         'cast' => 'strval',
                     ),
+                    self::USE_STATUS_PARTIAL_REFUND=> array(
+                        'title' => $this->l('Use partial refund status'),
+                        'type' => 'bool',
+                        'name' => self::USE_STATUS_PARTIAL_REFUND,
+                        'value' => Configuration::get(self::USE_STATUS_PARTIAL_REFUND),
+                        'validation' => 'isBool',
+                        'cast' => 'intval',
+                    ),
+                    self::STATUS_PARTIAL_REFUND => array(
+                        'title' => $this->l('Partial refund status'),
+                        'desc' => $this->l('Order status to use when the order is partially refunded'),
+                        'type' => 'select',
+                        'list' => $order_statuses,
+                        'identifier' => 'id_order_state',
+                        'name' => self::STATUS_PARTIAL_REFUND,
+                        'value' => $status_partial_refund,
+                        'validation' => 'isString',
+                        'cast' => 'strval',
+                    ),
+                    self::USE_STATUS_REFUND=> array(
+                        'title' => $this->l('Use refund status'),
+                        'type' => 'bool',
+                        'name' => self::USE_STATUS_REFUND,
+                        'value' => Configuration::get(self::USE_STATUS_REFUND),
+                        'validation' => 'isBool',
+                        'cast' => 'intval',
+                    ),
                     self::STATUS_REFUND => array(
                         'title' => $this->l('Refund status'),
                         'desc' => $this->l('Order status to use when the order is refunded'),
@@ -311,7 +349,7 @@ class MDStripe extends PaymentModule
                     ),
                     self::GENERATE_CREDIT_SLIP => array(
                         'title' => $this->l('Generate credit slip'),
-                        'desc' => $this->l('Automatically generate a credit slip when the order is refunded'),
+                        'desc' => $this->l('Automatically generate a credit slip when the order is fully refunded'),
                         'type' => 'bool',
                         'name' => self::GENERATE_CREDIT_SLIP,
                         'value' => Configuration::get(self::GENERATE_CREDIT_SLIP),
@@ -524,6 +562,9 @@ class MDStripe extends PaymentModule
 
     public function hookPaymentOptions($params)
     {
+        if (version_compare(_PS_VERSION_, '1.7.0.0', '<')) {
+            return false;
+        }
         if (!$this->active) {
             return array();
         }
@@ -617,9 +658,14 @@ class MDStripe extends PaymentModule
         return '';
     }
 
-    public function hookDisplayHeader($params)
+    public function hookHeader($params)
     {
-        $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
+        if (Tools::getValue('module') === 'onepagecheckoutps' ||
+            Tools::getValue('controller') === 'order-opc' ||
+            Tools::getValue('controller') === 'orderopc' ||
+            Tools::getValue('controller') === 'order') {
+            $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
+        }
     }
 
     /**
