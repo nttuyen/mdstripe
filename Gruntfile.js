@@ -17,6 +17,7 @@ module.exports = function(grunt) {
                     {src: ['upgrade/**'], dest: 'mdstripe/', filter: 'isFile'},
                     {src: ['optionaloverride/**'], dest: 'mdstripe/', filter: 'isFile'},
                     {src: ['oldoverride/**'], dest: 'mdstripe/', filter: 'isFile'},
+                    {src: ['sql/**'], dest: 'mdstripe/', filter: 'isFile'},
                     {src: ['lib/**'], dest: 'mdstripe/', filter: 'isFile'},
                     {src: ['defaultoverride/**'], dest: 'mdstripe/', filter: 'isFile'},
                     {src: ['views/**'], dest: 'mdstripe/', filter: 'isFile'},

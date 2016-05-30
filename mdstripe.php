@@ -24,9 +24,6 @@ if (!defined('_PS_VERSION_')) {
 require_once dirname(__FILE__).'/vendor/autoload.php';
 require_once dirname(__FILE__).'/classes/autoload.php';
 
-use /** @noinspection PhpUndefinedNamespaceInspection */
-    PrestaShop\PrestaShop\Core\Payment\PaymentOption;
-
 class MDStripe extends PaymentModule
 {
     const MENU_SETTINGS = 1;
@@ -87,6 +84,10 @@ class MDStripe extends PaymentModule
         $this->displayName = $this->l('Stripe');
         $this->description = $this->l('Accept payments with Stripe');
 
+        $this->currencies_mode = 'checkbox';
+        $this->currencies = true;
+        $this->limited_countries = false;
+
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
     }
 
@@ -97,11 +98,14 @@ class MDStripe extends PaymentModule
      */
     public function install()
     {
-        if (extension_loaded('curl') == false)
-        {
+        if (extension_loaded('curl') == false) {
             $this->_errors[] = $this->l('You have to enable the cURL extension on your server to install this module');
 
             return false;
+        }
+
+        foreach ($this->hooks as $hook) {
+            $this->registerHook($hook);
         }
 
         require_once dirname(__FILE__).'/sql/install.php';
@@ -116,12 +120,27 @@ class MDStripe extends PaymentModule
      */
     public function uninstall()
     {
+        foreach ($this->hooks as $hook) {
+            $this->unregisterHook($hook);
+        }
+
+        Configuration::deleteByName(self::SECRET_KEY);
+        Configuration::deleteByName(self::PUBLISHABLE_KEY);
+        Configuration::deleteByName(self::USE_STATUS_REFUND);
+        Configuration::deleteByName(self::USE_STATUS_PARTIAL_REFUND);
+        Configuration::deleteByName(self::STATUS_PARTIAL_REFUND);
+        Configuration::deleteByName(self::STATUS_REFUND);
+        Configuration::deleteByName(self::GENERATE_CREDIT_SLIP);
+        Configuration::deleteByName(self::ZIPCODE);
+        Configuration::deleteByName(self::ALIPAY);
+        Configuration::deleteByName(self::BITCOIN);
+
         return parent::uninstall();
     }
 
     /** @var array Hooks */
     public $hooks = array(
-        'header',
+        'displayHeader',
         'backOfficeHeader',
         'displayPayment',
         'displayPaymentEU',
@@ -136,7 +155,6 @@ class MDStripe extends PaymentModule
      */
     public function getContent()
     {
-        $this->registerHook('paymentOptions');
         $output = '';
 
         $this->initNavigation();
@@ -464,6 +482,8 @@ class MDStripe extends PaymentModule
         $current_page = (int)$this->getSelectedPage('stripe_transaction', $list_total);
 
         $helper_list = new HelperList();
+        $helper_list->id = 1;
+        $helper_list->shopLinkType = false;
 
         $helper_list->list_id = 'stripe_transaction';
 
@@ -745,49 +765,84 @@ class MDStripe extends PaymentModule
         $id_order = (int)Tools::getValue('stripe_refund_order');
         $amount = (float)Tools::getValue('stripe_refund_amount');
 
-        $sql = new DbQuery();
-        $sql->select('st.`id_charge`');
-        $sql->from('stripe_transaction', 'st');
-        $sql->where('st.`id_order` = '.(int)$id_order);
-
-        $result = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($sql);
-
-        $id_charge = '';
-        if (isset($result['id_charge'])) {
-            $id_charge = $result['id_charge'];
-        }
-
+        $id_charge = StripeTransaction::getChargeByIdOrder($id_order);
         $order = new Order($id_order);
         $currency = new Currency($order->id_currency);
+        $order_total = $order->getTotalPaid();
 
         if (!in_array(Tools::strtolower($currency->iso_code), self::$zero_decimal_currencies)) {
             $amount = (int)($amount * 100);
+            $order_total = (int)($order_total * 100);
         }
 
-        \Stripe\Stripe::setApiKey(Configuration::get(MDStripe::SECRET_KEY));
-        \Stripe\Refund::create(array(
-            'charge' => $id_charge,
-            'amount' => $amount,
-            'metadata' => array(
-               'from_back_office' => true
-            ),
-        ));
+        $amount_refunded = StripeTransaction::getRefundedAmountByOrderId($id_order);
 
-        $sql = new DbQuery();
-        $sql->select('st.`card_last_digits`');
-        $sql->from('stripe_transaction', 'st');
-        $sql->where('st.`id_charge` = \''.pSQL($id_charge).'\'');
+        try {
+            \Stripe\Stripe::setApiKey(Configuration::get(MDStripe::SECRET_KEY));
+            \Stripe\Refund::create(array(
+                'charge' => $id_charge,
+                'amount' => $amount,
+                'metadata' => array(
+                    'from_back_office' => 'true'
+                ),
+            ));
+        } catch (\Stripe\Error\InvalidRequest $e) {
+            $this->context->controller->errors[] = sprintf('Invalid Stripe request: %s', $e->getMessage());
+            return;
+        }
+        
+        if (Configuration::get(MDStripe::USE_STATUS_REFUND) && (int)($order_total - ($amount_refunded + $amount)) === 0) {
+            // Full refund
+            if (Configuration::get(MDStripe::GENERATE_CREDIT_SLIP)) {
+                $sql = new DbQuery();
+                $sql->select('od.`id_order_detail`, od.`product_quantity`');
+                $sql->from('order_detail', 'od');
+                $sql->where('od.`id_order` = '.(int)$order->id);
 
-        $last_digits = Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+                $full_product_list = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
 
-        $transaction = new StripeTransaction();
-        $transaction->card_last_digits = (int)$last_digits;
-        $transaction->id_charge = $id_charge;
-        $transaction->amount = $amount;
-        $transaction->id_order = $order->id;
-        $transaction->type = StripeTransaction::TYPE_FULL_REFUND;
-        $transaction->source = StripeTransaction::SOURCE_WEBHOOK;
-        $transaction->add();
+                if (is_array($full_product_list) && !empty($full_product_list)) {
+                    $product_list = array();
+                    $quantity_list = array();
+                    foreach ($full_product_list as $db_order_detail) {
+                        $id_order_detail = (int)$db_order_detail['id_order_detail'];
+                        $product_list[] = (int)$id_order_detail;
+                        $quantity_list[$id_order_detail] = (int)$db_order_detail['product_quantity'];
+                    }
+                    OrderSlip::createOrderSlip($order, $product_list, $quantity_list, $order->getShipping());
+                }
+            }
+
+            $transaction = new StripeTransaction();
+            $transaction->card_last_digits = (int)StripeTransaction::getLastFourDigitsByChargeId($id_charge);
+            $transaction->id_charge = $id_charge;
+            $transaction->amount = $amount;
+            $transaction->id_order = $order->id;
+            $transaction->type = StripeTransaction::TYPE_FULL_REFUND;
+            $transaction->source = StripeTransaction::SOURCE_BACK_OFFICE;
+            $transaction->add();
+
+            $order_history = new OrderHistory();
+            $order_history->id_order = $order->id;
+            $order_history->changeIdOrderState((int)Configuration::get(MDStripe::STATUS_REFUND), $id_order);
+            $order_history->addWithemail(true);
+        } else {
+            $transaction = new StripeTransaction();
+            $transaction->card_last_digits = (int)StripeTransaction::getLastFourDigitsByChargeId($id_charge);
+            $transaction->id_charge = $id_charge;
+            $transaction->amount = $amount;
+            $transaction->id_order = $order->id;
+            $transaction->type = StripeTransaction::TYPE_PARTIAL_REFUND;
+            $transaction->source = StripeTransaction::SOURCE_BACK_OFFICE;
+            $transaction->add();
+
+            if (Configuration::get(MDStripe::USE_STATUS_PARTIAL_REFUND)) {
+                $order_history = new OrderHistory();
+                $order_history->id_order = $order->id;
+                $order_history->changeIdOrderState((int)Configuration::get(MDStripe::STATUS_PARTIAL_REFUND), $id_order);
+                $order_history->addWithemail(true);
+            }
+        }
 
         Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$id_order);
     }
@@ -908,7 +963,7 @@ class MDStripe extends PaymentModule
             'stripe_confirmation_page' => $link->getModuleLink($this->name, 'validation'),
         ));
 
-        $externalOption = new PaymentOption();
+        $externalOption = new PrestaShop\PrestaShop\Core\Payment\PaymentOption();
         $externalOption->setCallToActionText($this->l('Pay with Stripe'))
             ->setAction($this->context->link->getModuleLink($this->name, 'validation', array(), true))
             ->setInputs(array(
@@ -1069,6 +1124,7 @@ class MDStripe extends PaymentModule
         }
 
         $helper_list = new HelperList();
+        $helper_list->id = 1;
 
         $helper_list->list_id = 'stripe_transaction';
         $helper_list->shopLinkType = false;

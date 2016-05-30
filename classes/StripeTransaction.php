@@ -212,16 +212,26 @@ class StripeTransaction extends ObjectModel
     public static function getChargeByIdOrder($id_order)
     {
         $sql = new DbQuery();
-        $sql->select('st.`id_charge`');
+        $sql->select('DISTINCT st.`id_charge`');
         $sql->from('stripe_transaction', 'st');
         $sql->where('st.`id_order` = '.(int)$id_order);
 
-        $result = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($sql);
+        return Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+    }
 
-        if (isset($result[0]['id_charge'])) {
-            return $result[0]['id_charge'];
-        }
+    /**
+     * Get last four digits of credit card by Charge ID
+     *
+     * @param string $id_charge Charge ID
+     * @return false|string Last 4 digits of CC
+     */
+    public static function getLastFourDigitsByChargeId($id_charge)
+    {
+        $sql = new DbQuery();
+        $sql->select('DISTINCT st.`card_last_digits`');
+        $sql->from('stripe_transaction', 'st');
+        $sql->where('st.`id_charge` = \''.pSQL($id_charge).'\'');
 
-        return false;
+        return Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
     }
 }
