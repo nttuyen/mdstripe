@@ -151,7 +151,8 @@ class MDStripe extends PaymentModule
 
         $this->context->smarty->assign(array(
             'module_dir' => $this->_path,
-            'menutabs' => $this->initNavigation()
+            'menutabs' => $this->initNavigation(),
+            'stripe_webhook_url' => $this->context->link->getModuleLink($this->name, 'hook', array(), true),
         ));
 
         $output .= $this->context->smarty->fetch($this->local_path.'views/templates/admin/navbar.tpl');
@@ -422,6 +423,12 @@ class MDStripe extends PaymentModule
         return $output;
     }
 
+    /**
+     * Render the transactions list
+     *
+     * @return string HTML
+     * @throws PrestaShopDatabaseException
+     */
     protected function renderTransactionsList()
     {
         $fields_list = array(
