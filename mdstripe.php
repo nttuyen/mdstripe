@@ -23,8 +23,8 @@ if (!defined('_PS_VERSION_')) {
 
 require_once dirname(__FILE__).'/vendor/autoload.php';
 
-/** @noinspection PhpUndefinedNamespaceInspection */
-use PrestaShop\PrestaShop\Core\Payment\PaymentOption;
+use /** @noinspection PhpUndefinedNamespaceInspection */
+    PrestaShop\PrestaShop\Core\Payment\PaymentOption;
 
 class MDStripe extends PaymentModule
 {
@@ -556,7 +556,12 @@ class MDStripe extends PaymentModule
     public function hookPayment($params)
     {
         /** @var Cookie $email */
-        $cookie = $params['cookie'];
+        if (Module::isEnabled('onepagecheckoutps') && !isset($params['cookie'])) {
+            $cookie = $this->context->cookie;
+        } else {
+            $cookie = $params['cookie'];
+        }
+
         $stripe_email = $cookie->email;
 
         /** @var Cart $cart */
@@ -569,7 +574,7 @@ class MDStripe extends PaymentModule
         if (!in_array(Tools::strtolower($currency->iso_code), self::$zero_decimal_currencies)) {
             $stripe_amount = (int)($stripe_amount * 100);
         }
-        
+
         $this->context->smarty->assign(array(
             'stripe_email' => $stripe_email,
             'stripe_currency' => $currency->iso_code,
@@ -584,6 +589,10 @@ class MDStripe extends PaymentModule
             'stripe_shopname' => $this->context->shop->name,
             'stripe_confirmation_page' => $link->getModuleLink($this->name, 'validation'),
         ));
+
+        if (Module::isEnabled('onepagecheckoutps')) {
+            return $this->context->smarty->fetch($this->local_path.'views/templates/front/eupayment.tpl');
+        }
 
         return $this->display(__FILE__, 'views/templates/hook/payment.tpl');
     }
