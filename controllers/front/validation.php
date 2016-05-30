@@ -68,7 +68,7 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
         $stripe_charge = \Stripe\Charge::create(array(
             'customer' => $stripe_customer->id,
             'amount' => $stripe_amount,
-            'currency' => $currency->iso_code
+            'currency' => Tools::strtolower($currency->iso_code)
         ));
 
         if ($stripe_charge->paid === true) {
@@ -91,10 +91,11 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
                 // Log transaction
                 $stripe_transaction = new StripeTransaction();
                 $stripe_transaction->card_last_digits = (int)$stripe_charge->source['last4'];
-                $stripe_transaction->charge_token = $token;
-                $stripe_transaction->amount = $cart->getOrderTotal();
+                $stripe_transaction->id_charge = $stripe_charge->id;
+                $stripe_transaction->amount = $stripe_amount;
                 $stripe_transaction->id_order = $id_order;
                 $stripe_transaction->type = StripeTransaction::TYPE_CHARGE;
+                $stripe_transaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
                 $stripe_transaction->add();
 
                 /**
@@ -110,6 +111,15 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
 
                 return false;
             }
+        } else {
+            $stripe_transaction = new StripeTransaction();
+            $stripe_transaction->card_last_digits = (int)$stripe_charge->source['last4'];
+            $stripe_transaction->id_charge = $stripe_charge->id;
+            $stripe_transaction->amount = 0;
+            $stripe_transaction->id_order = 0;
+            $stripe_transaction->type = StripeTransaction::TYPE_CHARGE_FAIL;
+            $stripe_transaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
+            $stripe_transaction->add();
         }
 
         /**

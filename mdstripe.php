@@ -188,6 +188,13 @@ class MDStripe extends PaymentModule
         return $menu;
     }
 
+    /**
+     * Render the general settings page
+     *
+     * @return string HTML
+     * @throws Exception
+     * @throws SmartyException
+     */
     protected function renderSettingsPage()
     {
         $output = '';
@@ -205,6 +212,11 @@ class MDStripe extends PaymentModule
         return $output;
     }
 
+    /**
+     * Render the General options form
+     *
+     * @return string HTML
+     */
     protected function renderGeneralOptions()
     {
         $helper = new HelperOptions();
@@ -218,6 +230,11 @@ class MDStripe extends PaymentModule
         return $helper->generateOptions(array_merge($this->getGeneralOptions(), $this->getOrderOptions()));
     }
 
+    /**
+     * Get available general options
+     *
+     * @return array General options
+     */
     protected function getGeneralOptions()
     {
         return array(
@@ -274,6 +291,11 @@ class MDStripe extends PaymentModule
         );
     }
 
+    /**
+     * Get available options for orders
+     *
+     * @return array Order options
+     */
     protected function getOrderOptions()
     {
         $order_statuses = OrderState::getOrderStates($this->context->language->id);
@@ -457,13 +479,19 @@ class MDStripe extends PaymentModule
     protected function postProcessOrderOptions()
     {
         $status_validated = Tools::getValue(self::STATUS_VALIDATED);
+        $use_status_refund = Tools::getValue(self::USE_STATUS_REFUND);
         $status_refund = Tools::getValue(self::STATUS_REFUND);
+        $use_status_partial_refund = Tools::getValue(self::USE_STATUS_PARTIAL_REFUND);
+        $status_partial_refund = Tools::getValue(self::STATUS_PARTIAL_REFUND);
         $generate_credit_slip = (bool)Tools::getValue(self::GENERATE_CREDIT_SLIP);
 
         if (Configuration::get('PS_MULTISHOP_FEATURE_ACTIVE')) {
             if (Shop::getContext() == Shop::CONTEXT_ALL) {
                 $this->updateAllValue(self::STATUS_VALIDATED, $status_validated);
+                $this->updateAllValue(self::USE_STATUS_REFUND, $use_status_refund);
                 $this->updateAllValue(self::STATUS_REFUND, $status_refund);
+                $this->updateAllValue(self::STATUS_PARTIAL_REFUND, $status_partial_refund);
+                $this->updateAllValue(self::USE_STATUS_PARTIAL_REFUND, $use_status_partial_refund);
                 $this->updateAllValue(self::GENERATE_CREDIT_SLIP, $generate_credit_slip);
             } elseif (is_array(Tools::getValue('multishopOverrideOption'))) {
                 $id_shop_group = (int)Shop::getGroupFromShop($this->getShopId(), true);
@@ -473,8 +501,17 @@ class MDStripe extends PaymentModule
                         if ($multishop_override[self::STATUS_VALIDATED]) {
                             Configuration::updateValue(self::STATUS_VALIDATED, $status_validated, false, $id_shop_group, $id_shop);
                         }
+                        if ($multishop_override[self::USE_STATUS_REFUND]) {
+                            Configuration::updateValue(self::USE_STATUS_REFUND, $use_status_refund, false, $id_shop_group, $id_shop);
+                        }
                         if ($multishop_override[self::STATUS_REFUND]) {
                             Configuration::updateValue(self::STATUS_REFUND, $status_refund, false, $id_shop_group, $id_shop);
+                        }
+                        if ($multishop_override[self::USE_STATUS_PARTIAL_REFUND]) {
+                            Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $use_status_partial_refund, false, $id_shop_group, $id_shop);
+                        }
+                        if ($multishop_override[self::STATUS_PARTIAL_REFUND]) {
+                            Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $status_partial_refund, false, $id_shop_group, $id_shop);
                         }
                         if ($multishop_override[self::GENERATE_CREDIT_SLIP]) {
                             Configuration::updateValue(self::GENERATE_CREDIT_SLIP, $generate_credit_slip, false, $id_shop_group, $id_shop);
@@ -485,8 +522,17 @@ class MDStripe extends PaymentModule
                     if ($multishop_override[self::STATUS_VALIDATED]) {
                         Configuration::updateValue(self::STATUS_VALIDATED, $status_validated, false, $id_shop_group, $id_shop);
                     }
+                    if ($multishop_override[self::USE_STATUS_REFUND]) {
+                        Configuration::updateValue(self::USE_STATUS_REFUND, $use_status_refund, false, $id_shop_group, $id_shop);
+                    }
                     if ($multishop_override[self::STATUS_REFUND]) {
                         Configuration::updateValue(self::STATUS_REFUND, $status_refund, false, $id_shop_group, $id_shop);
+                    }
+                    if ($multishop_override[self::USE_STATUS_PARTIAL_REFUND]) {
+                        Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $use_status_partial_refund, false, $id_shop_group, $id_shop);
+                    }
+                    if ($multishop_override[self::STATUS_PARTIAL_REFUND]) {
+                        Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $status_partial_refund, false, $id_shop_group, $id_shop);
                     }
                     if ($multishop_override[self::GENERATE_CREDIT_SLIP]) {
                         Configuration::updateValue(self::GENERATE_CREDIT_SLIP, $generate_credit_slip, false, $id_shop_group, $id_shop);
@@ -495,7 +541,10 @@ class MDStripe extends PaymentModule
             }
         } else {
             Configuration::updateValue(self::STATUS_VALIDATED, $status_validated);
+            Configuration::updateValue(self::USE_STATUS_REFUND, $use_status_refund);
             Configuration::updateValue(self::STATUS_REFUND, $status_refund);
+            Configuration::updateValue(self::USE_STATUS_PARTIAL_REFUND, $use_status_partial_refund);
+            Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $status_partial_refund);
             Configuration::updateValue(self::GENERATE_CREDIT_SLIP, $generate_credit_slip);
         }
     }
@@ -560,6 +609,14 @@ class MDStripe extends PaymentModule
         return $payment_options;
     }
 
+    /**
+     * Hook to the new PS 1.7 payment options hook
+     *
+     * @param $params Hook parameters
+     * @return array|bool
+     * @throws Exception
+     * @throws SmartyException
+     */
     public function hookPaymentOptions($params)
     {
         if (version_compare(_PS_VERSION_, '1.7.0.0', '<')) {
@@ -658,6 +715,11 @@ class MDStripe extends PaymentModule
         return '';
     }
 
+    /**
+     * Hook to header: <head></head>
+     *
+     * @param $params Hook parameters
+     */
     public function hookHeader($params)
     {
         if (Tools::getValue('module') === 'onepagecheckoutps' ||
@@ -763,6 +825,9 @@ class MDStripe extends PaymentModule
         }
     }
 
+    /**
+     * Check if TLS 1.2 is supported
+     */
     protected function tlsCheck()
     {
         $curl = curl_init();
