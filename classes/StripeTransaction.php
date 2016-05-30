@@ -152,15 +152,24 @@ class StripeTransaction extends ObjectModel
      * Get StripeTransactions by Order ID
      *
      * @param int $id_order Order ID
+     * @param bool $count Return amount of transactions
      * @return array|false|mysqli_result|null|PDOStatement|resource
      * @throws PrestaShopDatabaseException
      */
-    public static function getTransactionsByOrderId($id_order)
+    public static function getTransactionsByOrderId($id_order, $count = false)
     {
         $sql = new DbQuery();
-        $sql->select('*');
+        if ($count) {
+            $sql->select('count(*)');
+        } else {
+            $sql->select('*');
+        }
         $sql->from('stripe_transaction', 'st');
         $sql->where('st.`id_order` = '.(int)$id_order);
+
+        if ($count) {
+            return Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+        }
 
         return Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
     }

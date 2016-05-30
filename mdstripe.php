@@ -22,6 +22,7 @@ if (!defined('_PS_VERSION_')) {
 }
 
 require_once dirname(__FILE__).'/vendor/autoload.php';
+require_once dirname(__FILE__).'/classes/autoload.php';
 
 use /** @noinspection PhpUndefinedNamespaceInspection */
     PrestaShop\PrestaShop\Core\Payment\PaymentOption;
@@ -613,7 +614,7 @@ class MDStripe extends PaymentModule
      */
     public function hookPayment($params)
     {
-        /** @var Cookie $email */
+        /** @var Cookie $cookie */
         if (Module::isEnabled('onepagecheckoutps') && !isset($params['cookie'])) {
             $cookie = $this->context->cookie;
         } else {
@@ -799,13 +800,7 @@ class MDStripe extends PaymentModule
 
     public function hookDisplayAdminOrder($params)
     {
-        // TODO: find out why we cannot use StripeTransaction with 1.6.1.5
-        $sql = new DbQuery();
-        $sql->select('count(*)');
-        $sql->from('stripe_transaction', 'st');
-        $sql->where('st.`id_order` = '.(int)$params['id_order']);
-
-        if (Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql)) {
+        if (StripeTransaction::getTransactionsByOrderId($params['id_order'], true)) {
             $this->context->controller->addJS('https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js');
             $this->context->controller->addCSS('https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css');
 
@@ -817,22 +812,7 @@ class MDStripe extends PaymentModule
                 $total_refund_left = (int)(Tools::ps_round($total_refund_left * 100, 0));
             }
 
-            $amount = 0;
-
-            // TODO: find out why we cannot use constants with 1.6.1.5
-            $sql = new DbQuery();
-            $sql->select('st.`amount`');
-            $sql->from('stripe_transaction', 'st');
-            $sql->where('st.`id_order` = \''.pSQL($order->id).'\'');
-            $sql->where('st.`type` = 2 OR st.`type` = 3');
-
-            $db_amounts = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
-
-            if (is_array($db_amounts) && !empty($db_amounts)) {
-                foreach ($db_amounts as $db_amount) {
-                    $amount += (int)$db_amount['amount'];
-                }
-            }
+            $amount = (int)StripeTransaction::getRefundedAmountByOrderId($order->id);
 
             $total_refund_left -= $amount;
 
@@ -857,26 +837,73 @@ class MDStripe extends PaymentModule
 
     protected function renderAdminOrderTransactionList($id_order)
     {
-        $sql = new DbQuery();
-        $sql->select('*');
-        $sql->from('stripe_transaction', 'st');
-        $sql->where('st.`id_order` = '.(int)$id_order);
+        $results = StripeTransaction::getTransactionsByOrderId($id_order);
 
-        // TODO: why does StripeTransaction::getTransactionsByOrderId() cause a blank page on 1.6.1.5?
-        $results = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+        $order = new Order($id_order);
+        $currency = new Currency($order->id_currency);
+
+        if (!in_array(Tools::strtolower($currency->iso_code), MDStripe::$zero_decimal_currencies)) {
+            foreach ($results as &$result) {
+                // Process results
+                $result['amount'] = (float)($result['amount'] / 100);
+                switch ($result['type']) {
+                    case StripeTransaction::TYPE_CHARGE:
+                        $result['color'] = '#32CD32';
+                        $result['type_icon'] = 'credit-card';
+                        $result['type_text'] = $this->l('Charge');
+                        break;
+                    case StripeTransaction::TYPE_PARTIAL_REFUND:
+                        $result['color'] = '#FF8C00';
+                        $result['type_icon'] = 'undo';
+                        $result['type_text'] = $this->l('Partial refund');
+                        break;
+                    case StripeTransaction::TYPE_FULL_REFUND:
+                        $result['color'] = '#ec2e15';
+                        $result['type_icon'] = 'undo';
+                        $result['type_text'] = $this->l('Full refund');
+                        break;
+                    default:
+                        $result['color'] = '';
+                        break;
+                }
+
+                switch ($result['source']) {
+                    case StripeTransaction::SOURCE_FRONT_OFFICE:
+                        $result['source_text'] = $this->l('Front Office');
+                        break;
+                    case StripeTransaction::SOURCE_BACK_OFFICE:
+                        $result['source_text'] = $this->l('Back Office');
+                        break;
+                    case StripeTransaction::SOURCE_WEBHOOK:
+                        $result['source_text'] = $this->l('Webhook');
+                        break;
+                    default:
+                        $result['source_text'] = $this->l('Unknown');
+                        break;
+                }
+            }
+        }
 
         $helper_list = new HelperList();
 
         $helper_list->list_id = 'stripe_transaction';
         $helper_list->shopLinkType = false;
 
-        $helper_list->bulk_actions = array();
-        $helper_list->actions = array();
+        $helper_list->no_link = true;
 
         $helper_list->_defaultOrderBy = 'date_add';
 
+        $helper_list->simple_header = true;
+
+        $helper_list->module = $this;
+
         $fields_list = array(
-            'id_stripe_transaction' => array('title' => $this->l('ID'), 'width' => 40),
+            'id_stripe_transaction' => array('title' => $this->l('ID'), 'width' => 'auto'),
+            'type_icon' => array('type' => 'type_icon', 'title' => $this->l('Type'), 'width' => 'auto', 'color' => 'color', 'text' => 'type_text'),
+            'amount' => array('type' => 'price', 'title' => $this->l('Amount'), 'width' => 'auto'),
+            'card_last_digits' => array('type' => 'text', 'title' => $this->l('Credit card (last 4 digits)'), 'width' => 'auto'),
+            'source_text' => array('type' => 'stripe_source', 'title' => $this->l('Source'), 'width' => 'auto'),
+            'date_upd' => array('type' => 'datetime', 'title' => $this->l('Date & time'), 'width' => 'auto'),
         );
 
         $helper_list->identifier = 'id_stripe_transaction';
@@ -887,6 +914,11 @@ class MDStripe extends PaymentModule
                     'id_order' => $id_order,
                 )
             );
+
+        // Hide actions
+        $helper_list->tpl_vars['show_filters'] = false;
+        $helper_list->actions = true;
+        $helper_list->bulk_actions = false;
 
         $helper_list->table = 'stripe_transaction';
 
