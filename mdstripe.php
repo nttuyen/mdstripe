@@ -30,6 +30,7 @@ use /** @noinspection PhpUndefinedNamespaceInspection */
 class MDStripe extends PaymentModule
 {
     const MENU_SETTINGS = 1;
+    const MENU_TRANSACTIONS = 2;
 
     const ZIPCODE = 'MDSTRIPE_ZIPCODE';
     const BITCOIN = 'MDSTRIPE_BITCOIN';
@@ -73,7 +74,7 @@ class MDStripe extends PaymentModule
     {
         $this->name = 'mdstripe';
         $this->tab = 'payments_gateways';
-        $this->version = '0.6.0';
+        $this->version = '0.9.0';
         $this->author = 'Michael Dekker';
         $this->need_instance = 0;
 
@@ -156,10 +157,11 @@ class MDStripe extends PaymentModule
         $output .= $this->context->smarty->fetch($this->local_path.'views/templates/admin/navbar.tpl');
 
         switch (Tools::getValue('menu')) {
+            case self::MENU_TRANSACTIONS:
+                return $output.$this->renderTransactionsPage();
             default:
                 $this->menu = self::MENU_SETTINGS;
                 return $output.$this->renderSettingsPage();
-                break;
         }
     }
 
@@ -176,11 +178,22 @@ class MDStripe extends PaymentModule
                 'desc' => $this->l('Module settings'),
                 'href' => $this->module_url.'&menu='.self::MENU_SETTINGS,
                 'active' => false,
-                'icon' => 'icon-gears'
+                'icon' => 'icon-gears',
+            ),
+            self::MENU_TRANSACTIONS => array(
+                'short' => $this->l('Transactions'),
+                'desc' => $this->l('Stripe transactions'),
+                'href' => $this->module_url.'&menu='.self::MENU_TRANSACTIONS,
+                'active' => false,
+                'icon' => 'icon-credit-card',
             ),
         );
 
         switch (Tools::getValue('menu')) {
+            case self::MENU_TRANSACTIONS:
+                $this->menu = self::MENU_TRANSACTIONS;
+                $menu[self::MENU_TRANSACTIONS]['active'] = true;
+                break;
             default:
                 $this->menu = self::MENU_SETTINGS;
                 $menu[self::MENU_SETTINGS]['active'] = true;
@@ -387,6 +400,170 @@ class MDStripe extends PaymentModule
                 ),
             ),
         );
+    }
+
+    /**
+     * Render the transactions page
+     *
+     * @return string HTML
+     * @throws Exception
+     * @throws SmartyException
+     */
+    protected function renderTransactionsPage()
+    {
+        $output = '';
+
+        $this->context->smarty->assign(array(
+            'module_url' => $this->module_url.'&menu='.self::MENU_TRANSACTIONS,
+        ));
+
+        $output .= $this->renderTransactionsList();
+
+        return $output;
+    }
+
+    protected function renderTransactionsList()
+    {
+        $fields_list = array(
+            'id_stripe_transaction' => array('title' => $this->l('ID'), 'width' => 'auto'),
+            'type_icon' => array('type' => 'type_icon', 'title' => $this->l('Type'), 'width' => 'auto', 'color' => 'color', 'text' => 'type_text'),
+            'amount' => array('type' => 'price', 'title' => $this->l('Amount'), 'width' => 'auto'),
+            'card_last_digits' => array('type' => 'text', 'title' => $this->l('Credit card (last 4 digits)'), 'width' => 'auto'),
+            'source_text' => array('type' => 'stripe_source', 'title' => $this->l('Source'), 'width' => 'auto'),
+            'date_upd' => array('type' => 'datetime', 'title' => $this->l('Date & time'), 'width' => 'auto'),
+        );
+
+        if (Tools::isSubmit('submitResetstripe_transaction')) {
+            $cookie = $this->context->cookie;
+            foreach ($fields_list as $field_name => $field) {
+                unset($cookie->{'stripe_transactionFilter_'.$field_name});
+                unset($_POST['stripe_transactionFilter_'.$field_name]);
+                unset($_GET['stripe_transactionFilter_'.$field_name]);
+            }
+            unset($this->context->cookie->{'stripe_transactionOrderby'});
+            unset($this->context->cookie->{'stripe_transactionOrderWay'});
+
+
+            $cookie->write();
+        }
+
+        $sql = new DbQuery();
+        $sql->select('COUNT(*)');
+        $sql->from('stripe_transaction');
+
+        $list_total = (int)Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+
+        $pagination = (int)$this->getSelectedPagination('stripe_transaction');
+        $current_page = (int)$this->getSelectedPage('stripe_transaction', $list_total);
+
+        $helper_list = new HelperList();
+
+        $helper_list->list_id = 'stripe_transaction';
+
+        $helper_list->module = $this;
+
+        $helper_list->bulk_actions = array(
+            'delete'=>array(
+                'text'=>$this->l('Delete selected'),
+                'confirm'=>$this->l('Delete selected items?'))
+        );
+
+        $helper_list->actions = array('View');
+
+        $helper_list->page = $current_page;
+
+        $helper_list->_defaultOrderBy = 'id_stripe_transaction';
+
+        if (Tools::isSubmit('stripe_transactionOrderby')) {
+            $helper_list->orderBy = Tools::getValue('stripe_transactionOrderby');
+            $this->context->cookie->{'stripe_transactionOrderby'} = $helper_list->orderBy;
+        } elseif (!empty($this->context->cookie->{'stripe_transactionOrderby'})) {
+            $helper_list->orderBy = $this->context->cookie->{'stripe_transactionOrderby'};
+        } else {
+            $helper_list->orderBy = 'id_stripe_transaction';
+        }
+
+        if (Tools::isSubmit('stripe_transactionOrderway')) {
+            $helper_list->orderWay = Tools::strtoupper(Tools::getValue('stripe_transactionOrderway'));
+            $this->context->cookie->{'stripe_transactionOrderway'} = Tools::getValue('stripe_transactionOrderway');
+        } elseif (!empty($this->context->cookie->{'stripe_transactionOrderway'})) {
+            $helper_list->orderWay = Tools::strtoupper($this->context->cookie->{'stripe_transactionOrderway'});
+        } else {
+            $helper_list->orderWay = 'DESC';
+        }
+
+        $filter_sql = $this->getSQLFilter($helper_list, $fields_list);
+
+        $sql = new DbQuery();
+        $sql->select('*');
+        $sql->from('stripe_transaction', 'st');
+        $sql->orderBy('`'.bqSQL($helper_list->orderBy).'` '.pSQL($helper_list->orderWay));
+        $sql->where('1 '.$filter_sql);
+        $sql->limit($pagination, $current_page - 1);
+
+        $results = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+
+        foreach ($results as &$result) {
+            // Process results
+            $currency = $this->getCurrencyIdByOrderId($result['id_order']);
+            if (!in_array(Tools::strtolower($currency->iso_code), MDStripe::$zero_decimal_currencies)) {
+                $result['amount'] = (float)($result['amount'] / 100);
+            }
+            $result['id_currency'] = $currency->id;
+            switch ($result['type']) {
+                case StripeTransaction::TYPE_CHARGE:
+                    $result['color'] = '#32CD32';
+                    $result['type_icon'] = 'credit-card';
+                    $result['type_text'] = $this->l('Charged');
+                    break;
+                case StripeTransaction::TYPE_PARTIAL_REFUND:
+                    $result['color'] = '#FF8C00';
+                    $result['type_icon'] = 'undo';
+                    $result['type_text'] = $this->l('Partial refund');
+                    break;
+                case StripeTransaction::TYPE_FULL_REFUND:
+                    $result['color'] = '#ec2e15';
+                    $result['type_icon'] = 'undo';
+                    $result['type_text'] = $this->l('Full refund');
+                    break;
+                default:
+                    $result['color'] = '';
+                    break;
+            }
+
+            switch ($result['source']) {
+                case StripeTransaction::SOURCE_FRONT_OFFICE:
+                    $result['source_text'] = $this->l('Front Office');
+                    break;
+                case StripeTransaction::SOURCE_BACK_OFFICE:
+                    $result['source_text'] = $this->l('Back Office');
+                    break;
+                case StripeTransaction::SOURCE_WEBHOOK:
+                    $result['source_text'] = $this->l('Webhook');
+                    break;
+                default:
+                    $result['source_text'] = $this->l('Unknown');
+                    break;
+            }
+        }
+
+        $helper_list->listTotal = count($results);
+
+        $helper_list->identifier = 'id_stripe_transaction';
+        $helper_list->title = $this->l('Transactions');
+        $helper_list->token = Tools::getAdminTokenLite('AdminModules');
+        $helper_list->currentIndex = AdminController::$currentIndex.'&'.
+            http_build_query(array(
+                    'configure' => $this->name,
+                    'menu' => self::MENU_TRANSACTIONS
+                )
+            );
+
+        $helper_list->table = 'stripe_transaction';
+
+        $helper_list->bulk_actions = false;
+
+        return $helper_list->generateList($results, $fields_list);
     }
 
     /**
@@ -850,7 +1027,7 @@ class MDStripe extends PaymentModule
                     case StripeTransaction::TYPE_CHARGE:
                         $result['color'] = '#32CD32';
                         $result['type_icon'] = 'credit-card';
-                        $result['type_text'] = $this->l('Charge');
+                        $result['type_text'] = $this->l('Charged');
                         break;
                     case StripeTransaction::TYPE_PARTIAL_REFUND:
                         $result['color'] = '#FF8C00';
@@ -1037,5 +1214,166 @@ class MDStripe extends PaymentModule
         } else {
             $this->updateAllValue(self::TLS_OK, self::ENUM_TLS_ERROR);
         }
+    }
+
+    protected function getSelectedPagination($list_id, $default_pagination = 50)
+    {
+        $selected_pagination = Tools::getValue($list_id.'_pagination',
+            isset($this->context->cookie->{$list_id.'_pagination'}) ? $this->context->cookie->{$list_id.'_pagination'} : $default_pagination
+        );
+
+        return $selected_pagination;
+    }
+
+    protected function getSelectedPage($list_id, $list_total)
+    {
+        /* Determine current page number */
+        $page = (int)Tools::getValue('submitFilter'.$list_id);
+
+        if (!$page) {
+            $page = 1;
+        }
+
+        $total_pages = max(1, ceil($list_total / $this->getSelectedPagination($list_id)));
+
+        if ($page > $total_pages) {
+            $page = $total_pages;
+        }
+
+        $this->page = (int)$page;
+
+        return $page;
+    }
+
+    protected function getSQLFilter($helper_list, $fields_list)
+    {
+        /** @var HelperList $helper_list */
+        if (!isset($helper_list->list_id)) {
+            $helper_list->list_id = $helper_list->table;
+        }
+
+        $prefix = '';
+        $sql_filter = '';
+
+        if (isset($helper_list->list_id)) {
+            foreach ($_POST as $key => $value) {
+                if ($value === '') {
+                    unset($helper_list->context->cookie->{$prefix.$key});
+                } elseif (stripos($key, $helper_list->list_id.'Filter_') === 0) {
+                    $helper_list->context->cookie->{$prefix.$key} = !is_array($value) ? $value : serialize($value);
+                } elseif (stripos($key, 'submitFilter') === 0) {
+                    $helper_list->context->cookie->$key = !is_array($value) ? $value : serialize($value);
+                }
+            }
+
+            foreach ($_GET as $key => $value) {
+                if (stripos($key, $helper_list->list_id.'Filter_') === 0) {
+                    $helper_list->context->cookie->{$prefix.$key} = !is_array($value) ? $value : serialize($value);
+                } elseif (stripos($key, 'submitFilter') === 0) {
+                    $helper_list->context->cookie->$key = !is_array($value) ? $value : serialize($value);
+                }
+                if (stripos($key, $helper_list->list_id.'Orderby') === 0 && Validate::isOrderBy($value)) {
+                    if ($value === '' || $value == $helper_list->_defaultOrderBy) {
+                        unset($helper_list->context->cookie->{$prefix.$key});
+                    } else {
+                        $helper_list->context->cookie->{$prefix.$key} = $value;
+                    }
+                } elseif (stripos($key, $helper_list->list_id.'Orderway') === 0 && Validate::isOrderWay($value)) {
+                    if ($value === '' || $value == $helper_list->_defaultOrderWay) {
+                        unset($helper_list->context->cookie->{$prefix.$key});
+                    } else {
+                        $helper_list->context->cookie->{$prefix.$key} = $value;
+                    }
+                }
+            }
+        }
+
+        $filters = $helper_list->context->cookie->getFamily($prefix.$helper_list->list_id.'Filter_');
+        $definition = false;
+        if (isset($helper_list->className) && $helper_list->className) {
+            $definition = ObjectModel::getDefinition($helper_list->className);
+        }
+
+        foreach ($filters as $key => $value) {
+            /* Extracting filters from $_POST on key filter_ */
+            if ($value != null && !strncmp($key, $prefix.$helper_list->list_id.'Filter_', 7 + Tools::strlen($prefix.$helper_list->list_id))) {
+                $key = Tools::substr($key, 7 + Tools::strlen($prefix.$helper_list->list_id));
+                /* Table alias could be specified using a ! eg. alias!field */
+                $tmp_tab = explode('!', $key);
+                $filter = count($tmp_tab) > 1 ? $tmp_tab[1] : $tmp_tab[0];
+
+                if ($field = $this->filterToField($fields_list, $key, $filter)) {
+                    $type = (array_key_exists('filter_type', $field) ? $field['filter_type'] : (array_key_exists('type', $field) ? $field['type'] : false));
+                    if (($type == 'date' || $type == 'datetime') && is_string($value)) {
+                        $value = Tools::unSerialize($value);
+                    }
+                    $key = isset($tmp_tab[1]) ? $tmp_tab[0].'.`'.$tmp_tab[1].'`' : '`'.$tmp_tab[0].'`';
+                    $sql_filter = & $helper_list->_filter;
+
+                    /* Only for date filtering (from, to) */
+                    if (is_array($value)) {
+                        if (isset($value[0]) && !empty($value[0])) {
+                            if (!Validate::isDate($value[0])) {
+                                return $this->displayError('The \'From\' date format is invalid (YYYY-MM-DD)');
+                            } else {
+                                $sql_filter .= ' AND '.pSQL($key).' >= \''.pSQL(Tools::dateFrom($value[0])).'\'';
+                            }
+                        }
+
+                        if (isset($value[1]) && !empty($value[1])) {
+                            if (!Validate::isDate($value[1])) {
+                                return $this->displayError('The \'To\' date format is invalid (YYYY-MM-DD)');
+                            } else {
+                                $sql_filter .= ' AND '.pSQL($key).' <= \''.pSQL(Tools::dateTo($value[1])).'\'';
+                            }
+                        }
+                    } else {
+                        $sql_filter .= ' AND ';
+                        $check_key = ($key == $helper_list->identifier || $key == '`'.$helper_list->identifier.'`');
+                        $alias = ($definition && !empty($definition['fields'][$filter]['shop'])) ? 'sa' : 'a';
+
+                        if ($type == 'int' || $type == 'bool') {
+                            $sql_filter .= (($check_key || $key == '`active`') ?  $alias.'.' : '').pSQL($key).' = '.(int)$value.' ';
+                        } elseif ($type == 'decimal') {
+                            $sql_filter .= ($check_key ?  $alias.'.' : '').pSQL($key).' = '.(float)$value.' ';
+                        } elseif ($type == 'select') {
+                            $sql_filter .= ($check_key ?  $alias.'.' : '').pSQL($key).' = \''.pSQL($value).'\' ';
+                        } elseif ($type == 'price') {
+                            $value = (float)str_replace(',', '.', $value);
+                            $sql_filter .= ($check_key ?  $alias.'.' : '').pSQL($key).' = '.pSQL(trim($value)).' ';
+                        } else {
+                            $sql_filter .= ($check_key ?  $alias.'.' : '').pSQL($key).' LIKE \'%'.pSQL(trim($value)).'%\' ';
+                        }
+                    }
+                }
+            }
+        }
+
+        return $sql_filter;
+    }
+
+    protected function filterToField($fields_list, $key, $filter)
+    {
+        foreach ($fields_list as $field) {
+            if (array_key_exists('filter_key', $field) && $field['filter_key'] == $key) {
+                return $field;
+            }
+        }
+        if (array_key_exists($filter, $fields_list)) {
+            return $fields_list[$filter];
+        }
+        return false;
+    }
+
+    protected function getCurrencyIdByOrderId($id_order)
+    {
+        $order = new Order($id_order);
+        if (Validate::isLoadedObject($order)) {
+            $currency = new Currency($order->id_currency);
+        } else {
+            $currency = new Currency((int)Configuration::get('PS_CURRENCY_DEFAULT'));
+        }
+
+        return $currency;
     }
 }

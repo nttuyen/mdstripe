@@ -55,7 +55,12 @@
 			{/if}
 		{/if}
 					{elseif isset($params.type) && $params.type == 'price'}
-						{displayPrice price=$tr.$key}
+						{if isset($tr.id_currency)}
+							{displayPrice price=$tr.$key currency=$params.id_currency}
+						{else}
+							{displayPrice price=$tr.$key}
+						{/if}
+
 					{elseif isset($params.type) && $params.type == 'type_icon'}
 						<i class="icon icon-{$tr['type_icon']|escape:'htmlall':'UTF-8'}"></i> {$tr['type_text']}
 					{elseif isset($params.float)}
