@@ -29,7 +29,6 @@ class MdstripeHookModuleFrontController extends ModuleFrontController
     {
         $body = Tools::file_get_contents('php://input');
 
-
         if (!empty($body) && $data = Tools::jsonDecode($body, true)) {
             // Verify with Stripe
             \Stripe\Stripe::setApiKey(Configuration::get(MDStripe::SECRET_KEY));
@@ -58,6 +57,29 @@ class MdstripeHookModuleFrontController extends ModuleFrontController
     {
         /** @var \Stripe\Charge $charge */
         $charge = $event->data['object'];
+
+        $refunds = array();
+        $previous_attributes = array();
+
+        if (isset($charge['previous_attributes'][0]['refunds']['data'])) {
+            foreach ($charge['previous_attributes'][0]['refunds']['data'] as $previous_attribute) {
+                $previous_attributes[] = $previous_attribute['id'];
+            }
+
+            foreach ($charge['refunds']['data'] as $refund) {
+                if (!in_array($refund['id'], $previous_attributes)) {
+                    $refunds[] = $refund;
+                }
+            }
+
+            // Remove previous attributes
+            foreach ($refunds as $refund) {
+                if (isset($refund['metadata']['from_back_office']) && $refund['metadata']['from_back_office'] == 'true') {
+                    die('not processed');
+                }
+            }
+        }
+
 
         if (!$id_order = StripeTransaction::getIdOrderByCharge($charge->id)) {
             die('ok');

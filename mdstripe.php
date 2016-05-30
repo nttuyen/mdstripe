@@ -126,6 +126,7 @@ class MDStripe extends PaymentModule
         'paymentOptions',
         'paymentReturn',
         'displayPaymentTop',
+        'displayAdminOrder',
     );
 
     /**
@@ -394,7 +395,9 @@ class MDStripe extends PaymentModule
     {
         $output = '';
 
-        if ($this->menu == self::MENU_SETTINGS) {
+        if (Tools::isSubmit('orderstriperefund') && Tools::isSubmit('stripe_refund_order') && Tools::isSubmit('stripe_refund_amount')) {
+            $this->processRefund();
+        } elseif ($this->menu == self::MENU_SETTINGS) {
             if (Tools::isSubmit('submitOptionsconfiguration')) {
                 $output .= $this->postProcessGeneralOptions();
                 $output .= $this->postProcessOrderOptions();
@@ -547,6 +550,61 @@ class MDStripe extends PaymentModule
             Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $status_partial_refund);
             Configuration::updateValue(self::GENERATE_CREDIT_SLIP, $generate_credit_slip);
         }
+    }
+
+    /**
+     *
+     */
+    protected function processRefund()
+    {
+        $id_order = (int)Tools::getValue('stripe_refund_order');
+        $amount = (float)Tools::getValue('stripe_refund_amount');
+
+        $sql = new DbQuery();
+        $sql->select('st.`id_charge`');
+        $sql->from('stripe_transaction', 'st');
+        $sql->where('st.`id_order` = '.(int)$id_order);
+
+        $result = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($sql);
+
+        $id_charge = '';
+        if (isset($result['id_charge'])) {
+            $id_charge = $result['id_charge'];
+        }
+
+        $order = new Order($id_order);
+        $currency = new Currency($order->id_currency);
+
+        if (!in_array(Tools::strtolower($currency->iso_code), self::$zero_decimal_currencies)) {
+            $amount = (int)($amount * 100);
+        }
+
+        \Stripe\Stripe::setApiKey(Configuration::get(MDStripe::SECRET_KEY));
+        \Stripe\Refund::create(array(
+            'charge' => $id_charge,
+            'amount' => $amount,
+            'metadata' => array(
+               'from_back_office' => true
+            ),
+        ));
+
+        $sql = new DbQuery();
+        $sql->select('st.`card_last_digits`');
+        $sql->from('stripe_transaction', 'st');
+        $sql->where('st.`id_charge` = \''.pSQL($id_charge).'\'');
+
+        $last_digits = Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+
+        $transaction = new StripeTransaction();
+        $transaction->card_last_digits = (int)$last_digits;
+        $transaction->id_charge = $id_charge;
+        $transaction->amount = $amount;
+        $transaction->id_order = $order->id;
+        $transaction->type = StripeTransaction::TYPE_FULL_REFUND;
+        $transaction->source = StripeTransaction::SOURCE_WEBHOOK;
+        $transaction->add();
+
+        Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$id_order);
     }
 
     /**
@@ -737,6 +795,102 @@ class MDStripe extends PaymentModule
             Tools::getValue('controller') === 'order') {
             $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
         }
+    }
+
+    public function hookDisplayAdminOrder($params)
+    {
+        // TODO: find out why we cannot use StripeTransaction with 1.6.1.5
+        $sql = new DbQuery();
+        $sql->select('count(*)');
+        $sql->from('stripe_transaction', 'st');
+        $sql->where('st.`id_order` = '.(int)$params['id_order']);
+
+        if (Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql)) {
+            $this->context->controller->addJS('https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js');
+            $this->context->controller->addCSS('https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css');
+
+            $order = new Order($params['id_order']);
+            $order_currency = new Currency($order->id_currency);
+
+            $total_refund_left = $order->getTotalPaid();
+            if (!in_array(Tools::strtolower($order_currency->iso_code), MDStripe::$zero_decimal_currencies)) {
+                $total_refund_left = (int)(Tools::ps_round($total_refund_left * 100, 0));
+            }
+
+            $amount = 0;
+
+            // TODO: find out why we cannot use constants with 1.6.1.5
+            $sql = new DbQuery();
+            $sql->select('st.`amount`');
+            $sql->from('stripe_transaction', 'st');
+            $sql->where('st.`id_order` = \''.pSQL($order->id).'\'');
+            $sql->where('st.`type` = 2 OR st.`type` = 3');
+
+            $db_amounts = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+
+            if (is_array($db_amounts) && !empty($db_amounts)) {
+                foreach ($db_amounts as $db_amount) {
+                    $amount += (int)$db_amount['amount'];
+                }
+            }
+
+            $total_refund_left -= $amount;
+
+            if (!in_array(Tools::strtolower($order_currency->iso_code), MDStripe::$zero_decimal_currencies)) {
+                $total_refund_left = (float)($total_refund_left / 100);
+            }
+            
+            $this->context->smarty->assign(array(
+                'stripe_transaction_list' => $this->renderAdminOrderTransactionList($params['id_order']),
+                'stripe_currency_symbol' => $order_currency->sign,
+                'stripe_total_amount' => $total_refund_left,
+                'stripe_module_refund_action' => $this->context->link->getAdminLink('AdminModules', true).
+                    '&configure=mdstripe&tab_module=payments_gateways&module_name=mdstripe&orderstriperefund',
+                'id_order' => (int)$order->id,
+            ));
+
+            return $this->context->smarty->fetch($this->local_path.'views/templates/admin/adminorder.tpl');
+        }
+
+        return '';
+    }
+
+    protected function renderAdminOrderTransactionList($id_order)
+    {
+        $sql = new DbQuery();
+        $sql->select('*');
+        $sql->from('stripe_transaction', 'st');
+        $sql->where('st.`id_order` = '.(int)$id_order);
+
+        // TODO: why does StripeTransaction::getTransactionsByOrderId() cause a blank page on 1.6.1.5?
+        $results = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+
+        $helper_list = new HelperList();
+
+        $helper_list->list_id = 'stripe_transaction';
+        $helper_list->shopLinkType = false;
+
+        $helper_list->bulk_actions = array();
+        $helper_list->actions = array();
+
+        $helper_list->_defaultOrderBy = 'date_add';
+
+        $fields_list = array(
+            'id_stripe_transaction' => array('title' => $this->l('ID'), 'width' => 40),
+        );
+
+        $helper_list->identifier = 'id_stripe_transaction';
+        $helper_list->title = $this->l('Transactions');
+        $helper_list->token = Tools::getAdminTokenLite('AdminOrders');
+        $helper_list->currentIndex = AdminController::$currentIndex.'&'.
+            http_build_query(array(
+                    'id_order' => $id_order,
+                )
+            );
+
+        $helper_list->table = 'stripe_transaction';
+
+        return $helper_list->generateList($results, $fields_list);
     }
 
     /**

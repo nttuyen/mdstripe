@@ -46,7 +46,6 @@ class StripeTransaction extends ObjectModel
     /** @var int $amount */
     public $amount;
 
-
     public $date_add;
     public $date_upd;
 
@@ -123,8 +122,8 @@ class StripeTransaction extends ObjectModel
     /**
      * Get refunded amount by Charge ID
      *
-     * @param $id_charge
-     * @return float $amount
+     * @param int $id_charge Charge ID
+     * @return int $amount
      */
     public static function getRefundedAmount($id_charge)
     {
@@ -147,5 +146,73 @@ class StripeTransaction extends ObjectModel
         }
 
         return $amount;
+    }
+
+    /**
+     * Get StripeTransactions by Order ID
+     *
+     * @param int $id_order Order ID
+     * @return array|false|mysqli_result|null|PDOStatement|resource
+     * @throws PrestaShopDatabaseException
+     */
+    public static function getTransactionsByOrderId($id_order)
+    {
+        $sql = new DbQuery();
+        $sql->select('*');
+        $sql->from('stripe_transaction', 'st');
+        $sql->where('st.`id_order` = '.(int)$id_order);
+
+        return Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+    }
+
+    /**
+     * Get refunded amount by Order ID
+     *
+     * @param int $id_order Order ID
+     * @return int $amount
+     */
+    public static function getRefundedAmountByOrderId($id_order)
+    {
+        $amount = 0;
+
+        $sql = new DbQuery();
+        $sql->select('st.`amount`');
+        $sql->from('stripe_transaction', 'st');
+        $sql->where('st.`id_order` = \''.pSQL($id_order).'\'');
+        $sql->where('st.`type` = '.self::TYPE_PARTIAL_REFUND.' OR st.`type` = '.self::TYPE_FULL_REFUND);
+
+        $db_amounts = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+
+        if (!is_array($db_amounts) || empty($db_amounts)) {
+            return $amount;
+        }
+
+        foreach ($db_amounts as $db_amount) {
+            $amount += (int)$db_amount['amount'];
+        }
+
+        return $amount;
+    }
+
+    /**
+     * Get Charge ID by Order ID
+     *
+     * @param int $id_order Order ID
+     * @return bool|string Charge ID or false if not found
+     */
+    public static function getChargeByIdOrder($id_order)
+    {
+        $sql = new DbQuery();
+        $sql->select('st.`id_charge`');
+        $sql->from('stripe_transaction', 'st');
+        $sql->where('st.`id_order` = '.(int)$id_order);
+
+        $result = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($sql);
+
+        if (isset($result[0]['id_charge'])) {
+            return $result[0]['id_charge'];
+        }
+
+        return false;
     }
 }
