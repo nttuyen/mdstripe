@@ -84,9 +84,10 @@ class MDStripe extends PaymentModule
         $this->displayName = $this->l('Stripe');
         $this->description = $this->l('Accept payments with Stripe');
 
-        $this->currencies_mode = 'checkbox';
+        $this->is_eu_compatible = 1;
         $this->currencies = true;
-        $this->limited_countries = false;
+        $this->currencies_mode = 'checkbox';
+
 
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
     }
@@ -99,7 +100,7 @@ class MDStripe extends PaymentModule
     public function install()
     {
         if (extension_loaded('curl') == false) {
-            $this->_errors[] = $this->l('You have to enable the cURL extension on your server to install this module');
+            $this->errors[] = $this->l('You have to enable the cURL extension on your server to install this module');
 
             return false;
         }
@@ -142,7 +143,7 @@ class MDStripe extends PaymentModule
     public $hooks = array(
         'displayHeader',
         'backOfficeHeader',
-        'displayPayment',
+        'payment',
         'displayPaymentEU',
         'paymentOptions',
         'paymentReturn',

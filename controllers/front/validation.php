@@ -53,7 +53,7 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
                 'email' => $customer->email,
                 'source' => $token
             ));
-        } catch (Stripe\Error\InvalidRequest $e) {
+        } catch (Exception $e) {
             $this->errors[] = $e->getMessage();
             $this->setTemplate('error.tpl');
 
@@ -65,11 +65,20 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
             $stripe_amount = (int)($stripe_amount * 100);
         }
 
-        $stripe_charge = \Stripe\Charge::create(array(
-            'customer' => $stripe_customer->id,
-            'amount' => $stripe_amount,
-            'currency' => Tools::strtolower($currency->iso_code)
-        ));
+        try {
+            $stripe_charge = \Stripe\Charge::create(
+                array(
+                    'customer' => $stripe_customer->id,
+                    'amount' => $stripe_amount,
+                    'currency' => Tools::strtolower($currency->iso_code),
+                )
+            );
+        } catch (Exception $e) {
+            $this->errors[] = $e->getMessage();
+            $this->setTemplate('error.tpl');
+
+            return false;
+        }
 
         if ($stripe_charge->paid === true) {
             $payment_status = Configuration::get(MDStripe::STATUS_VALIDATED);
