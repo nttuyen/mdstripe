@@ -36,12 +36,17 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
      */
     public function postProcess()
     {
-        if ((Tools::isSubmit('mdstripe-id_cart') == false) || (Tools::isSubmit('mdstripe-token') == false)) {
+        $orderProcess = Configuration::get('PS_ORDER_PROCESS_TYPE') ? 'order-opc' : 'order';
+        $this->context->smarty->assign(array(
+            'orderLink' => $this->context->link->getPageLink($orderProcess, true),
+        ));
+
+//        if ((Tools::isSubmit('mdstripe-id_cart') == false) || (Tools::isSubmit('mdstripe-token') == false)) {
             $this->errors[] = $this->module->l('An error occurred. Please contact us for more information.');
             $this->setTemplate('error.tpl');
 
             return false;
-        }
+//        }
 
         $token = Tools::getValue('mdstripe-token');
         $idCart = Tools::getValue('mdstripe-id_cart');

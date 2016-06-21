@@ -16,7 +16,7 @@
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
 {capture name=path}
-	<a href="{$link->getPageLink('order', true)|escape:'html':'UTF-8'}">
+	<a href="{$orderLink|escape:'html':'UTF-8'}">
 		{l s='Order'}
 	</a>
 	<span class="navigation-pipe">
@@ -34,3 +34,6 @@
 		{/foreach}
 	</ul>
 </div>
+<ul class="footer_links clearfix">
+	<li><a class="btn btn-default button button-small" href="{$orderLink|escape:'html':'UTF-8'}" title="{l s='Back to your shopping cart'}"><span><i class="icon-chevron-left"></i> {l s='Back to your shopping cart'}</span></a></li>
+</ul>
