@@ -1043,8 +1043,8 @@ class MDStripe extends PaymentModule
     /**
      * Hook to the top a payment page
      *
-     * @param $params
-     * @return string
+     * @param array $params Hook parameters
+     * @return string Hook HTML
      */
     public function hookDisplayPaymentTop($params)
     {
@@ -1057,7 +1057,7 @@ class MDStripe extends PaymentModule
     /**
      * Hook to header: <head></head>
      *
-     * @param $params Hook parameters
+     * @param array $params Hook parameters
      */
     public function hookHeader($params)
     {
@@ -1069,6 +1069,14 @@ class MDStripe extends PaymentModule
         }
     }
 
+    /**
+     * Display on Back Office order page
+     *
+     * @param array $params Hok parameters
+     * @return string Hook HTML
+     * @throws Exception
+     * @throws SmartyException
+     */
     public function hookDisplayAdminOrder($params)
     {
         if (StripeTransaction::getTransactionsByOrderId($params['id_order'], true)) {
@@ -1106,11 +1114,17 @@ class MDStripe extends PaymentModule
         return '';
     }
 
-    protected function renderAdminOrderTransactionList($id_order)
+    /**
+     * Render the admin order transaction list
+     *
+     * @param int $idOrder Order ID
+     * @return string Transaction list HTML
+     */
+    protected function renderAdminOrderTransactionList($idOrder)
     {
-        $results = StripeTransaction::getTransactionsByOrderId($id_order);
+        $results = StripeTransaction::getTransactionsByOrderId($idOrder);
 
-        $order = new Order($id_order);
+        $order = new Order($idOrder);
         $currency = new Currency($order->id_currency);
 
         if (!in_array(Tools::strtolower($currency->iso_code), MDStripe::$zeroDecimalCurrencies)) {
@@ -1183,7 +1197,7 @@ class MDStripe extends PaymentModule
         $helperList->token = Tools::getAdminTokenLite('AdminOrders');
         $helperList->currentIndex = AdminController::$currentIndex.'&'.
             http_build_query(array(
-                    'id_order' => $id_order,
+                    'id_order' => $idOrder,
                 )
             );
 
@@ -1200,9 +1214,9 @@ class MDStripe extends PaymentModule
     /**
      * Update configuration value in ALL contexts
      *
-     * @param string $key Configuration key
-     * @param mixed $values Configuration values, can be string or array with id_lang as key
-     * @param bool $html Contains HTML
+     * @param string $key    Configuration key
+     * @param mixed  $values Configuration values, can be string or array with id_lang as key
+     * @param bool   $html   Contains HTML
      */
     public function updateAllValue($key, $values, $html = false)
     {
@@ -1222,7 +1236,7 @@ class MDStripe extends PaymentModule
     {
         $cookie = Context::getContext()->cookie->getFamily('shopContext');
 
-        return (int)Tools::substr($cookie['shopContext'], 2, count($cookie['shopContext']));
+        return (int) Tools::substr($cookie['shopContext'], 2, count($cookie['shopContext']));
     }
 
     /**
@@ -1233,10 +1247,10 @@ class MDStripe extends PaymentModule
      */
     public static function getStripeLanguage($locale)
     {
-        $language_iso = Tools::strtolower(Tools::substr($locale, 0, 2));
+        $languageIso = Tools::strtolower(Tools::substr($locale, 0, 2));
 
-        if (in_array($language_iso, self::$stripeLanguages)) {
-            return $language_iso;
+        if (in_array($languageIso, self::$stripeLanguages)) {
+            return $languageIso;
         }
 
         return 'en';
@@ -1249,13 +1263,13 @@ class MDStripe extends PaymentModule
      */
     protected function detectBOSettingsErrors()
     {
-        $lang_id = Context::getContext()->language->id;
+        $langId = Context::getContext()->language->id;
         $output = array();
         if (Configuration::get('PS_DISABLE_NON_NATIVE_MODULE')) {
             $output[] = $this->l('Non native modules such as this one are disabled. Go to').' "'.
-                $this->getTabName('AdminParentPreferences', $lang_id).
+                $this->getTabName('AdminParentPreferences', $langId).
                 ' > '.
-                $this->getTabName('AdminPerformance', $lang_id).
+                $this->getTabName('AdminPerformance', $langId).
                 '" '.$this->l('and make sure that the option').' "'.
                 Translate::getAdminTranslation('Disable non PrestaShop modules', 'AdminPerformance').
                 '" '.$this->l('is set to').' "'.
@@ -1267,14 +1281,14 @@ class MDStripe extends PaymentModule
 
     /**
      * Get Tab name from database
-     * @param $class_name string Class name of tab
-     * @param $id_lang int Language id
+     * @param $className string Class name of tab
+     * @param $idLang int Language id
      *
      * @return string Returns the localized tab name
      */
-    protected function getTabName($class_name, $id_lang)
+    protected function getTabName($className, $idLang)
     {
-        if ($class_name == null || $id_lang == null) {
+        if ($className == null || $idLang == null) {
             return '';
         }
 
@@ -1282,11 +1296,11 @@ class MDStripe extends PaymentModule
         $sql->select('tl.`name`');
         $sql->from('tab_lang', 'tl');
         $sql->innerJoin('tab', 't', 't.`id_tab` = tl.`id_tab`');
-        $sql->where('t.`class_name` = \''.pSQL($class_name).'\'');
-        $sql->where('tl.`id_lang` = '.(int)$id_lang);
+        $sql->where('t.`class_name` = \''.pSQL($className).'\'');
+        $sql->where('tl.`id_lang` = '.(int) $idLang);
 
         try {
-            return (string)Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+            return (string) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
         } catch (Exception $e) {
             return $this->l('Unknown');
         }
@@ -1300,7 +1314,7 @@ class MDStripe extends PaymentModule
         $curl = curl_init();
         curl_setopt_array($curl, array(
             CURLOPT_RETURNTRANSFER => 1,
-            CURLOPT_URL => 'https://tlstest.paypal.com/'
+            CURLOPT_URL => 'https://tlstest.paypal.com/',
         ));
         $result = curl_exec($curl);
 
@@ -1311,99 +1325,119 @@ class MDStripe extends PaymentModule
         }
     }
 
-    protected function getSelectedPagination($list_id, $default_pagination = 50)
+    /**
+     * Get selected pagination
+     *
+     * @param int $idList
+     * @param int $defaultPagination
+     * @return mixed
+     */
+    protected function getSelectedPagination($idList, $defaultPagination = 50)
     {
-        $selected_pagination = Tools::getValue($list_id.'_pagination',
-            isset($this->context->cookie->{$list_id.'_pagination'}) ? $this->context->cookie->{$list_id.'_pagination'} : $default_pagination
+        $selectedPagination = Tools::getValue($idList.'_pagination',
+            isset($this->context->cookie->{$idList.'_pagination'}) ? $this->context->cookie->{$idList.'_pagination'} : $defaultPagination
         );
 
-        return $selected_pagination;
+        return $selectedPagination;
     }
 
-    protected function getSelectedPage($list_id, $list_total)
+    /**
+     * Get selected page
+     *
+     * @param int $idList List ID
+     * @param int $listTotal Total list items
+     *
+     * @return int|mixed
+     */
+    protected function getSelectedPage($idList, $listTotal)
     {
         /* Determine current page number */
-        $page = (int)Tools::getValue('submitFilter'.$list_id);
+        $page = (int) Tools::getValue('submitFilter'.$idList);
 
         if (!$page) {
             $page = 1;
         }
 
-        $total_pages = max(1, ceil($list_total / $this->getSelectedPagination($list_id)));
+        $totalPages = max(1, ceil($listTotal / $this->getSelectedPagination($idList)));
 
-        if ($page > $total_pages) {
-            $page = $total_pages;
+        if ($page > $totalPages) {
+            $page = $totalPages;
         }
 
-        $this->page = (int)$page;
+        $this->page = (int) $page;
 
         return $page;
     }
 
-    protected function getSQLFilter($helper_list, $fields_list)
+    /**
+     * @param $helperList
+     * @param $fieldsList
+     * @return array|string
+     */
+    protected function getSQLFilter($helperList, $fieldsList)
     {
-        /** @var HelperList $helper_list */
-        if (!isset($helper_list->list_id)) {
-            $helper_list->list_id = $helper_list->table;
+        /** @var HelperList $helperList */
+        if (!isset($helperList->list_id)) {
+            $helperList->list_id = $helperList->table;
         }
 
         $prefix = '';
         $sql_filter = '';
 
-        if (isset($helper_list->list_id)) {
+        if (isset($helperList->list_id)) {
             foreach ($_POST as $key => $value) {
                 if ($value === '') {
-                    unset($helper_list->context->cookie->{$prefix.$key});
-                } elseif (stripos($key, $helper_list->list_id.'Filter_') === 0) {
-                    $helper_list->context->cookie->{$prefix.$key} = !is_array($value) ? $value : serialize($value);
+                    unset($helperList->context->cookie->{$prefix.$key});
+                } elseif (stripos($key, $helperList->list_id.'Filter_') === 0) {
+                    $helperList->context->cookie->{$prefix.$key} = !is_array($value) ? $value : serialize($value);
                 } elseif (stripos($key, 'submitFilter') === 0) {
-                    $helper_list->context->cookie->$key = !is_array($value) ? $value : serialize($value);
+                    $helperList->context->cookie->$key = !is_array($value) ? $value : serialize($value);
                 }
             }
 
             foreach ($_GET as $key => $value) {
-                if (stripos($key, $helper_list->list_id.'Filter_') === 0) {
-                    $helper_list->context->cookie->{$prefix.$key} = !is_array($value) ? $value : serialize($value);
+                if (stripos($key, $helperList->list_id.'Filter_') === 0) {
+                    $helperList->context->cookie->{$prefix.$key} = !is_array($value) ? $value : serialize($value);
                 } elseif (stripos($key, 'submitFilter') === 0) {
-                    $helper_list->context->cookie->$key = !is_array($value) ? $value : serialize($value);
+                    $helperList->context->cookie->$key = !is_array($value) ? $value : serialize($value);
                 }
-                if (stripos($key, $helper_list->list_id.'Orderby') === 0 && Validate::isOrderBy($value)) {
-                    if ($value === '' || $value == $helper_list->_defaultOrderBy) {
-                        unset($helper_list->context->cookie->{$prefix.$key});
+                if (stripos($key, $helperList->list_id.'Orderby') === 0 && Validate::isOrderBy($value)) {
+                    if ($value === '' || $value == $helperList->_defaultOrderBy) {
+                        unset($helperList->context->cookie->{$prefix.$key});
                     } else {
-                        $helper_list->context->cookie->{$prefix.$key} = $value;
+                        $helperList->context->cookie->{$prefix.$key} = $value;
                     }
-                } elseif (stripos($key, $helper_list->list_id.'Orderway') === 0 && Validate::isOrderWay($value)) {
-                    if ($value === '' || $value == $helper_list->_defaultOrderWay) {
-                        unset($helper_list->context->cookie->{$prefix.$key});
+                } elseif (stripos($key, $helperList->list_id.'Orderway') === 0 && Validate::isOrderWay($value)) {
+                    if ($value === '' || $value == $helperList->_defaultOrderWay) {
+                        unset($helperList->context->cookie->{$prefix.$key});
                     } else {
-                        $helper_list->context->cookie->{$prefix.$key} = $value;
+                        $helperList->context->cookie->{$prefix.$key} = $value;
                     }
                 }
             }
         }
 
-        $filters = $helper_list->context->cookie->getFamily($prefix.$helper_list->list_id.'Filter_');
+        $filters = $helperList->context->cookie->getFamily($prefix.$helperList->list_id.'Filter_');
         $definition = false;
-        if (isset($helper_list->className) && $helper_list->className) {
-            $definition = ObjectModel::getDefinition($helper_list->className);
+        if (isset($helperList->className) && $helperList->className) {
+            $definition = ObjectModel::getDefinition($helperList->className);
         }
 
         foreach ($filters as $key => $value) {
             /* Extracting filters from $_POST on key filter_ */
-            if ($value != null && !strncmp($key, $prefix.$helper_list->list_id.'Filter_', 7 + Tools::strlen($prefix.$helper_list->list_id))) {
-                $key = Tools::substr($key, 7 + Tools::strlen($prefix.$helper_list->list_id));
+            if ($value != null && !strncmp($key, $prefix.$helperList->list_id.'Filter_', 7 + Tools::strlen($prefix.$helperList->list_id))) {
+                $key = Tools::substr($key, 7 + Tools::strlen($prefix.$helperList->list_id));
                 /* Table alias could be specified using a ! eg. alias!field */
                 $tmp_tab = explode('!', $key);
                 $filter = count($tmp_tab) > 1 ? $tmp_tab[1] : $tmp_tab[0];
 
-                if ($field = $this->filterToField($fields_list, $key, $filter)) {
+                if ($field = $this->filterToField($fieldsList, $key, $filter)) {
                     $type = (array_key_exists('filter_type', $field) ? $field['filter_type'] : (array_key_exists('type', $field) ? $field['type'] : false));
                     if (($type == 'date' || $type == 'datetime') && is_string($value)) {
                         $value = Tools::unSerialize($value);
                     }
                     $key = isset($tmp_tab[1]) ? $tmp_tab[0].'.`'.$tmp_tab[1].'`' : '`'.$tmp_tab[0].'`';
-                    $sql_filter = & $helper_list->_filter;
+                    $sql_filter = & $helperList->_filter;
 
                     /* Only for date filtering (from, to) */
                     if (is_array($value)) {
@@ -1424,7 +1458,7 @@ class MDStripe extends PaymentModule
                         }
                     } else {
                         $sql_filter .= ' AND ';
-                        $check_key = ($key == $helper_list->identifier || $key == '`'.$helper_list->identifier.'`');
+                        $check_key = ($key == $helperList->identifier || $key == '`'.$helperList->identifier.'`');
                         $alias = ($definition && !empty($definition['fields'][$filter]['shop'])) ? 'sa' : 'a';
 
                         if ($type == 'int' || $type == 'bool') {
@@ -1447,6 +1481,12 @@ class MDStripe extends PaymentModule
         return $sql_filter;
     }
 
+    /**
+     * @param $fieldsList
+     * @param $key
+     * @param $filter
+     * @return bool
+     */
     protected function filterToField($fieldsList, $key, $filter)
     {
         foreach ($fieldsList as $field) {
@@ -1460,6 +1500,10 @@ class MDStripe extends PaymentModule
         return false;
     }
 
+    /**
+     * @param $idOrder
+     * @return Currency
+     */
     protected function getCurrencyIdByOrderId($idOrder)
     {
         $order = new Order($idOrder);
