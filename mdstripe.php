@@ -51,18 +51,29 @@ class MDStripe extends PaymentModule
     const ENUM_TLS_OK = 1;
     const ENUM_TLS_ERROR = -1;
 
-    public $module_url;
+    public $moduleUrl;
 
     /** @var array Supported languages */
-    public static $stripe_languages = array('zh', 'nl', 'en', 'fr', 'de', 'it', 'ja', 'es');
+    public static $stripeLanguages = array('zh', 'nl', 'en', 'fr', 'de', 'it', 'ja', 'es');
 
     /** @var array Supported zero-decimal currencies */
-    public static $zero_decimal_currencies =
-        array('bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga', 'pyg', 'rwf',
-        'vdn', 'vuv', 'xaf', 'xof', 'xpf');
+    public static $zeroDecimalCurrencies =
+        array('bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga', 'pyg', 'rwf', 'vdn', 'vuv', 'xaf', 'xof', 'xpf');
 
     /** @var int $menu Current menu */
     public $menu;
+
+    /** @var array Hooks */
+    public $hooks = array(
+        'displayHeader',
+        'backOfficeHeader',
+        'payment',
+        'displayPaymentEU',
+        'paymentOptions',
+        'paymentReturn',
+        'displayPaymentTop',
+        'displayAdminOrder',
+    );
 
     /**
      * MDStripe constructor.
@@ -139,20 +150,10 @@ class MDStripe extends PaymentModule
         return parent::uninstall();
     }
 
-    /** @var array Hooks */
-    public $hooks = array(
-        'displayHeader',
-        'backOfficeHeader',
-        'payment',
-        'displayPaymentEU',
-        'paymentOptions',
-        'paymentReturn',
-        'displayPaymentTop',
-        'displayAdminOrder',
-    );
-
     /**
      * Load the configuration form
+     *
+     * @return string HTML
      */
     public function getContent()
     {
@@ -160,7 +161,7 @@ class MDStripe extends PaymentModule
 
         $this->initNavigation();
 
-        $this->module_url = Context::getContext()->link->getAdminLink('AdminModules', false).'&token='.Tools::getAdminTokenLite('AdminModules').'&'.
+        $this->moduleUrl = Context::getContext()->link->getAdminLink('AdminModules', false).'&token='.Tools::getAdminTokenLite('AdminModules').'&'.
             http_build_query(array(
                 'configure' => $this->name,
             ));
@@ -196,14 +197,14 @@ class MDStripe extends PaymentModule
             self::MENU_SETTINGS => array(
                 'short' => $this->l('Settings'),
                 'desc' => $this->l('Module settings'),
-                'href' => $this->module_url.'&menu='.self::MENU_SETTINGS,
+                'href' => $this->moduleUrl.'&menu='.self::MENU_SETTINGS,
                 'active' => false,
                 'icon' => 'icon-gears',
             ),
             self::MENU_TRANSACTIONS => array(
                 'short' => $this->l('Transactions'),
                 'desc' => $this->l('Stripe transactions'),
-                'href' => $this->module_url.'&menu='.self::MENU_TRANSACTIONS,
+                'href' => $this->moduleUrl.'&menu='.self::MENU_TRANSACTIONS,
                 'active' => false,
                 'icon' => 'icon-credit-card',
             ),
@@ -235,8 +236,8 @@ class MDStripe extends PaymentModule
         $output = '';
 
         $this->context->smarty->assign(array(
-            'module_url' => $this->module_url.'&menu='.self::MENU_SETTINGS,
-            'tls_ok' => (int)Configuration::get(self::TLS_OK)
+            'module_url' => $this->moduleUrl.'&menu='.self::MENU_SETTINGS,
+            'tls_ok' => (int)Configuration::get(self::TLS_OK),
         ));
 
         $output .= $this->context->smarty->fetch($this->local_path.'views/templates/admin/configure.tpl');
@@ -333,21 +334,21 @@ class MDStripe extends PaymentModule
      */
     protected function getOrderOptions()
     {
-        $order_statuses = OrderState::getOrderStates($this->context->language->id);
+        $orderStatuses = OrderState::getOrderStates($this->context->language->id);
 
-        $status_validated = (int)Configuration::get(self::STATUS_VALIDATED);
-        if ($status_validated < 1) {
-            $status_validated = (int)Configuration::get('PS_OS_PAYMENT');
+        $statusValidated = (int) Configuration::get(self::STATUS_VALIDATED);
+        if ($statusValidated < 1) {
+            $statusValidated = (int) Configuration::get('PS_OS_PAYMENT');
         }
 
-        $status_partial_refund = (int)Configuration::get(self::STATUS_PARTIAL_REFUND);
-        if ($status_partial_refund < 1) {
-            $status_partial_refund = (int)Configuration::get('PS_OS_REFUND');
+        $statusPartialRefund = (int) Configuration::get(self::STATUS_PARTIAL_REFUND);
+        if ($statusPartialRefund < 1) {
+            $statusPartialRefund = (int) Configuration::get('PS_OS_REFUND');
         }
 
-        $status_refund = (int)Configuration::get(self::STATUS_REFUND);
-        if ($status_refund < 1) {
-            $status_refund = (int)Configuration::get('PS_OS_REFUND');
+        $statusRefund = (int) Configuration::get(self::STATUS_REFUND);
+        if ($statusRefund < 1) {
+            $statusRefund = (int) Configuration::get('PS_OS_REFUND');
         }
 
         return array(
@@ -359,14 +360,14 @@ class MDStripe extends PaymentModule
                         'title' => $this->l('Payment accepted status'),
                         'des' => $this->l('Order status to use when the payment is accepted'),
                         'type' => 'select',
-                        'list' => $order_statuses,
+                        'list' => $orderStatuses,
                         'identifier' => 'id_order_state',
                         'name' => self::STATUS_VALIDATED,
-                        'value' => $status_validated,
+                        'value' => $statusValidated,
                         'validation' => 'isString',
                         'cast' => 'strval',
                     ),
-                    self::USE_STATUS_PARTIAL_REFUND=> array(
+                    self::USE_STATUS_PARTIAL_REFUND => array(
                         'title' => $this->l('Use partial refund status'),
                         'type' => 'bool',
                         'name' => self::USE_STATUS_PARTIAL_REFUND,
@@ -378,14 +379,14 @@ class MDStripe extends PaymentModule
                         'title' => $this->l('Partial refund status'),
                         'desc' => $this->l('Order status to use when the order is partially refunded'),
                         'type' => 'select',
-                        'list' => $order_statuses,
+                        'list' => $orderStatuses,
                         'identifier' => 'id_order_state',
                         'name' => self::STATUS_PARTIAL_REFUND,
-                        'value' => $status_partial_refund,
+                        'value' => $statusPartialRefund,
                         'validation' => 'isString',
                         'cast' => 'strval',
                     ),
-                    self::USE_STATUS_REFUND=> array(
+                    self::USE_STATUS_REFUND => array(
                         'title' => $this->l('Use refund status'),
                         'type' => 'bool',
                         'name' => self::USE_STATUS_REFUND,
@@ -397,10 +398,10 @@ class MDStripe extends PaymentModule
                         'title' => $this->l('Refund status'),
                         'desc' => $this->l('Order status to use when the order is refunded'),
                         'type' => 'select',
-                        'list' => $order_statuses,
+                        'list' => $orderStatuses,
                         'identifier' => 'id_order_state',
                         'name' => self::PUBLISHABLE_KEY,
-                        'value' => $status_refund,
+                        'value' => $statusRefund,
                         'validation' => 'isString',
                         'cast' => 'strval',
                     ),
@@ -416,7 +417,7 @@ class MDStripe extends PaymentModule
                 ),
                 'submit' => array(
                     'title' => $this->l('Save'),
-                    'class' => 'button'
+                    'class' => 'button',
                 ),
             ),
         );
@@ -434,7 +435,7 @@ class MDStripe extends PaymentModule
         $output = '';
 
         $this->context->smarty->assign(array(
-            'module_url' => $this->module_url.'&menu='.self::MENU_TRANSACTIONS,
+            'module_url' => $this->moduleUrl.'&menu='.self::MENU_TRANSACTIONS,
         ));
 
         $output .= $this->renderTransactionsList();
@@ -450,7 +451,7 @@ class MDStripe extends PaymentModule
      */
     protected function renderTransactionsList()
     {
-        $fields_list = array(
+        $fieldsList = array(
             'id_stripe_transaction' => array('title' => $this->l('ID'), 'width' => 'auto'),
             'type_icon' => array('type' => 'type_icon', 'title' => $this->l('Type'), 'width' => 'auto', 'color' => 'color', 'text' => 'type_text'),
             'amount' => array('type' => 'price', 'title' => $this->l('Amount'), 'width' => 'auto'),
@@ -461,7 +462,7 @@ class MDStripe extends PaymentModule
 
         if (Tools::isSubmit('submitResetstripe_transaction')) {
             $cookie = $this->context->cookie;
-            foreach ($fields_list as $field_name => $field) {
+            foreach ($fieldsList as $field_name => $field) {
                 unset($cookie->{'stripe_transactionFilter_'.$field_name});
                 unset($_POST['stripe_transactionFilter_'.$field_name]);
                 unset($_GET['stripe_transactionFilter_'.$field_name]);
@@ -477,65 +478,66 @@ class MDStripe extends PaymentModule
         $sql->select('COUNT(*)');
         $sql->from('stripe_transaction');
 
-        $list_total = (int)Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+        $listTotal = (int) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
 
-        $pagination = (int)$this->getSelectedPagination('stripe_transaction');
-        $current_page = (int)$this->getSelectedPage('stripe_transaction', $list_total);
+        $pagination = (int) $this->getSelectedPagination('stripe_transaction');
+        $currentPage = (int) $this->getSelectedPage('stripe_transaction', $listTotal);
 
-        $helper_list = new HelperList();
-        $helper_list->id = 1;
-        $helper_list->shopLinkType = false;
+        $helperList = new HelperList();
+        $helperList->id = 1;
+        $helperList->shopLinkType = false;
 
-        $helper_list->list_id = 'stripe_transaction';
+        $helperList->list_id = 'stripe_transaction';
 
-        $helper_list->module = $this;
+        $helperList->module = $this;
 
-        $helper_list->bulk_actions = array(
-            'delete'=>array(
-                'text'=>$this->l('Delete selected'),
-                'confirm'=>$this->l('Delete selected items?'))
+        $helperList->bulk_actions = array(
+            'delete' => array(
+                'text' => $this->l('Delete selected'),
+                'confirm' => $this->l('Delete selected items?'),
+            ),
         );
 
-        $helper_list->actions = array('View');
+        $helperList->actions = array('View');
 
-        $helper_list->page = $current_page;
+        $helperList->page = $currentPage;
 
-        $helper_list->_defaultOrderBy = 'id_stripe_transaction';
+        $helperList->_defaultOrderBy = 'id_stripe_transaction';
 
         if (Tools::isSubmit('stripe_transactionOrderby')) {
-            $helper_list->orderBy = Tools::getValue('stripe_transactionOrderby');
-            $this->context->cookie->{'stripe_transactionOrderby'} = $helper_list->orderBy;
+            $helperList->orderBy = Tools::getValue('stripe_transactionOrderby');
+            $this->context->cookie->{'stripe_transactionOrderby'} = $helperList->orderBy;
         } elseif (!empty($this->context->cookie->{'stripe_transactionOrderby'})) {
-            $helper_list->orderBy = $this->context->cookie->{'stripe_transactionOrderby'};
+            $helperList->orderBy = $this->context->cookie->{'stripe_transactionOrderby'};
         } else {
-            $helper_list->orderBy = 'id_stripe_transaction';
+            $helperList->orderBy = 'id_stripe_transaction';
         }
 
         if (Tools::isSubmit('stripe_transactionOrderway')) {
-            $helper_list->orderWay = Tools::strtoupper(Tools::getValue('stripe_transactionOrderway'));
+            $helperList->orderWay = Tools::strtoupper(Tools::getValue('stripe_transactionOrderway'));
             $this->context->cookie->{'stripe_transactionOrderway'} = Tools::getValue('stripe_transactionOrderway');
         } elseif (!empty($this->context->cookie->{'stripe_transactionOrderway'})) {
-            $helper_list->orderWay = Tools::strtoupper($this->context->cookie->{'stripe_transactionOrderway'});
+            $helperList->orderWay = Tools::strtoupper($this->context->cookie->{'stripe_transactionOrderway'});
         } else {
-            $helper_list->orderWay = 'DESC';
+            $helperList->orderWay = 'DESC';
         }
 
-        $filter_sql = $this->getSQLFilter($helper_list, $fields_list);
+        $filterSql = $this->getSQLFilter($helperList, $fieldsList);
 
         $sql = new DbQuery();
         $sql->select('*');
         $sql->from('stripe_transaction', 'st');
-        $sql->orderBy('`'.bqSQL($helper_list->orderBy).'` '.pSQL($helper_list->orderWay));
-        $sql->where('1 '.$filter_sql);
-        $sql->limit($pagination, $current_page - 1);
+        $sql->orderBy('`'.bqSQL($helperList->orderBy).'` '.pSQL($helperList->orderWay));
+        $sql->where('1 '.$filterSql);
+        $sql->limit($pagination, $currentPage - 1);
 
         $results = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
 
         foreach ($results as &$result) {
             // Process results
             $currency = $this->getCurrencyIdByOrderId($result['id_order']);
-            if (!in_array(Tools::strtolower($currency->iso_code), MDStripe::$zero_decimal_currencies)) {
-                $result['amount'] = (float)($result['amount'] / 100);
+            if (!in_array(Tools::strtolower($currency->iso_code), MDStripe::$zeroDecimalCurrencies)) {
+                $result['amount'] = (float) ($result['amount'] / 100);
             }
             $result['id_currency'] = $currency->id;
             switch ($result['type']) {
@@ -575,23 +577,23 @@ class MDStripe extends PaymentModule
             }
         }
 
-        $helper_list->listTotal = count($results);
+        $helperList->listTotal = count($results);
 
-        $helper_list->identifier = 'id_stripe_transaction';
-        $helper_list->title = $this->l('Transactions');
-        $helper_list->token = Tools::getAdminTokenLite('AdminModules');
-        $helper_list->currentIndex = AdminController::$currentIndex.'&'.
+        $helperList->identifier = 'id_stripe_transaction';
+        $helperList->title = $this->l('Transactions');
+        $helperList->token = Tools::getAdminTokenLite('AdminModules');
+        $helperList->currentIndex = AdminController::$currentIndex.'&'.
             http_build_query(array(
                     'configure' => $this->name,
                     'menu' => self::MENU_TRANSACTIONS
                 )
             );
 
-        $helper_list->table = 'stripe_transaction';
+        $helperList->table = 'stripe_transaction';
 
-        $helper_list->bulk_actions = false;
+        $helperList->bulk_actions = false;
 
-        return $helper_list->generateList($results, $fields_list);
+        return $helperList->generateList($results, $fieldsList);
     }
 
     /**
@@ -609,7 +611,7 @@ class MDStripe extends PaymentModule
                 $output .= $this->postProcessOrderOptions();
             }
 
-            if (Tools::isSubmit('checktls') && (bool)Tools::getValue('checktls')) {
+            if (Tools::isSubmit('checktls') && (bool) Tools::getValue('checktls')) {
                 $output .= $this->tlsCheck();
             }
         }
@@ -620,62 +622,62 @@ class MDStripe extends PaymentModule
      */
     protected function postProcessGeneralOptions()
     {
-        $secret_key = Tools::getValue(self::SECRET_KEY);
-        $publishable_key = Tools::getValue(self::PUBLISHABLE_KEY);
-        $zipcode = (bool)Tools::getValue(self::ZIPCODE);
-        $bitcoin = (bool)Tools::getValue(self::BITCOIN);
-        $alipay = (bool)Tools::getValue(self::ALIPAY);
+        $secretKey = Tools::getValue(self::SECRET_KEY);
+        $publishableKey = Tools::getValue(self::PUBLISHABLE_KEY);
+        $zipcode = (bool) Tools::getValue(self::ZIPCODE);
+        $bitcoin = (bool) Tools::getValue(self::BITCOIN);
+        $alipay = (bool) Tools::getValue(self::ALIPAY);
 
         if (Configuration::get('PS_MULTISHOP_FEATURE_ACTIVE')) {
             if (Shop::getContext() == Shop::CONTEXT_ALL) {
-                $this->updateAllValue(self::SECRET_KEY, $secret_key);
-                $this->updateAllValue(self::PUBLISHABLE_KEY, $publishable_key);
+                $this->updateAllValue(self::SECRET_KEY, $secretKey);
+                $this->updateAllValue(self::PUBLISHABLE_KEY, $publishableKey);
                 $this->updateAllValue(self::ZIPCODE, $zipcode);
                 $this->updateAllValue(self::BITCOIN, $bitcoin);
                 $this->updateAllValue(self::ALIPAY, $alipay);
             } elseif (is_array(Tools::getValue('multishopOverrideOption'))) {
-                $id_shop_group = (int)Shop::getGroupFromShop($this->getShopId(), true);
-                $multishop_override = Tools::getValue('multishopOverrideOption');
+                $idShopGroup = (int) Shop::getGroupFromShop($this->getShopId(), true);
+                $multishopOverride = Tools::getValue('multishopOverrideOption');
                 if (Shop::getContext() == Shop::CONTEXT_GROUP) {
-                    foreach (Shop::getShops(false, $this->getShopId()) as $id_shop) {
-                        if ($multishop_override[self::SECRET_KEY]) {
-                            Configuration::updateValue(self::SECRET_KEY, $secret_key, false, $id_shop_group, $id_shop);
+                    foreach (Shop::getShops(false, $this->getShopId()) as $idShop) {
+                        if ($multishopOverride[self::SECRET_KEY]) {
+                            Configuration::updateValue(self::SECRET_KEY, $secretKey, false, $idShopGroup, $idShop);
                         }
-                        if ($multishop_override[self::PUBLISHABLE_KEY]) {
-                            Configuration::updateValue(self::PUBLISHABLE_KEY, $publishable_key, false, $id_shop_group, $id_shop);
+                        if ($multishopOverride[self::PUBLISHABLE_KEY]) {
+                            Configuration::updateValue(self::PUBLISHABLE_KEY, $publishableKey, false, $idShopGroup, $idShop);
                         }
-                        if ($multishop_override[self::ZIPCODE]) {
-                            Configuration::updateValue(self::ZIPCODE, $zipcode, false, $id_shop_group, $id_shop);
+                        if ($multishopOverride[self::ZIPCODE]) {
+                            Configuration::updateValue(self::ZIPCODE, $zipcode, false, $idShopGroup, $idShop);
                         }
-                        if ($multishop_override[self::BITCOIN]) {
-                            Configuration::updateValue(self::BITCOIN, $bitcoin, false, $id_shop_group, $id_shop);
+                        if ($multishopOverride[self::BITCOIN]) {
+                            Configuration::updateValue(self::BITCOIN, $bitcoin, false, $idShopGroup, $idShop);
                         }
-                        if ($multishop_override[self::ALIPAY]) {
-                            Configuration::updateValue(self::ALIPAY, $alipay, false, $id_shop_group, $id_shop);
+                        if ($multishopOverride[self::ALIPAY]) {
+                            Configuration::updateValue(self::ALIPAY, $alipay, false, $idShopGroup, $idShop);
                         }
                     }
                 } else {
-                    $id_shop = (int)$this->getShopId();
-                    if ($multishop_override[self::SECRET_KEY]) {
-                        Configuration::updateValue(self::SECRET_KEY, $secret_key, false, $id_shop_group, $id_shop);
+                    $idShop = (int)$this->getShopId();
+                    if ($multishopOverride[self::SECRET_KEY]) {
+                        Configuration::updateValue(self::SECRET_KEY, $secretKey, false, $idShopGroup, $idShop);
                     }
-                    if ($multishop_override[self::PUBLISHABLE_KEY]) {
-                        Configuration::updateValue(self::PUBLISHABLE_KEY, $publishable_key, false, $id_shop_group, $id_shop);
+                    if ($multishopOverride[self::PUBLISHABLE_KEY]) {
+                        Configuration::updateValue(self::PUBLISHABLE_KEY, $publishableKey, false, $idShopGroup, $idShop);
                     }
-                    if ($multishop_override[self::ZIPCODE]) {
-                        Configuration::updateValue(self::ZIPCODE, $zipcode, false, $id_shop_group, $id_shop);
+                    if ($multishopOverride[self::ZIPCODE]) {
+                        Configuration::updateValue(self::ZIPCODE, $zipcode, false, $idShopGroup, $idShop);
                     }
-                    if ($multishop_override[self::BITCOIN]) {
-                        Configuration::updateValue(self::BITCOIN, $bitcoin, false, $id_shop_group, $id_shop);
+                    if ($multishopOverride[self::BITCOIN]) {
+                        Configuration::updateValue(self::BITCOIN, $bitcoin, false, $idShopGroup, $idShop);
                     }
-                    if ($multishop_override[self::ALIPAY]) {
-                        Configuration::updateValue(self::ALIPAY, $alipay, false, $id_shop_group, $id_shop);
+                    if ($multishopOverride[self::ALIPAY]) {
+                        Configuration::updateValue(self::ALIPAY, $alipay, false, $idShopGroup, $idShop);
                     }
                 }
             }
         } else {
-            Configuration::updateValue(self::SECRET_KEY, $secret_key);
-            Configuration::updateValue(self::PUBLISHABLE_KEY, $publishable_key);
+            Configuration::updateValue(self::SECRET_KEY, $secretKey);
+            Configuration::updateValue(self::PUBLISHABLE_KEY, $publishableKey);
             Configuration::updateValue(self::ZIPCODE, $zipcode);
             Configuration::updateValue(self::BITCOIN, $bitcoin);
             Configuration::updateValue(self::ALIPAY, $alipay);
@@ -687,74 +689,74 @@ class MDStripe extends PaymentModule
      */
     protected function postProcessOrderOptions()
     {
-        $status_validated = Tools::getValue(self::STATUS_VALIDATED);
-        $use_status_refund = Tools::getValue(self::USE_STATUS_REFUND);
-        $status_refund = Tools::getValue(self::STATUS_REFUND);
-        $use_status_partial_refund = Tools::getValue(self::USE_STATUS_PARTIAL_REFUND);
-        $status_partial_refund = Tools::getValue(self::STATUS_PARTIAL_REFUND);
-        $generate_credit_slip = (bool)Tools::getValue(self::GENERATE_CREDIT_SLIP);
+        $statusValidated = Tools::getValue(self::STATUS_VALIDATED);
+        $useStatusRefund = Tools::getValue(self::USE_STATUS_REFUND);
+        $statusRefund = Tools::getValue(self::STATUS_REFUND);
+        $useStatusPartialRefund = Tools::getValue(self::USE_STATUS_PARTIAL_REFUND);
+        $statusPartialRefund = Tools::getValue(self::STATUS_PARTIAL_REFUND);
+        $generateCreditSlip = (bool)Tools::getValue(self::GENERATE_CREDIT_SLIP);
 
         if (Configuration::get('PS_MULTISHOP_FEATURE_ACTIVE')) {
             if (Shop::getContext() == Shop::CONTEXT_ALL) {
-                $this->updateAllValue(self::STATUS_VALIDATED, $status_validated);
-                $this->updateAllValue(self::USE_STATUS_REFUND, $use_status_refund);
-                $this->updateAllValue(self::STATUS_REFUND, $status_refund);
-                $this->updateAllValue(self::STATUS_PARTIAL_REFUND, $status_partial_refund);
-                $this->updateAllValue(self::USE_STATUS_PARTIAL_REFUND, $use_status_partial_refund);
-                $this->updateAllValue(self::GENERATE_CREDIT_SLIP, $generate_credit_slip);
+                $this->updateAllValue(self::STATUS_VALIDATED, $statusValidated);
+                $this->updateAllValue(self::USE_STATUS_REFUND, $useStatusRefund);
+                $this->updateAllValue(self::STATUS_REFUND, $statusRefund);
+                $this->updateAllValue(self::STATUS_PARTIAL_REFUND, $statusPartialRefund);
+                $this->updateAllValue(self::USE_STATUS_PARTIAL_REFUND, $useStatusPartialRefund);
+                $this->updateAllValue(self::GENERATE_CREDIT_SLIP, $generateCreditSlip);
             } elseif (is_array(Tools::getValue('multishopOverrideOption'))) {
-                $id_shop_group = (int)Shop::getGroupFromShop($this->getShopId(), true);
-                $multishop_override = Tools::getValue('multishopOverrideOption');
+                $idShopGroup = (int)Shop::getGroupFromShop($this->getShopId(), true);
+                $multishopOverride = Tools::getValue('multishopOverrideOption');
                 if (Shop::getContext() == Shop::CONTEXT_GROUP) {
-                    foreach (Shop::getShops(false, $this->getShopId()) as $id_shop) {
-                        if ($multishop_override[self::STATUS_VALIDATED]) {
-                            Configuration::updateValue(self::STATUS_VALIDATED, $status_validated, false, $id_shop_group, $id_shop);
+                    foreach (Shop::getShops(false, $this->getShopId()) as $idShop) {
+                        if ($multishopOverride[self::STATUS_VALIDATED]) {
+                            Configuration::updateValue(self::STATUS_VALIDATED, $statusValidated, false, $idShopGroup, $idShop);
                         }
-                        if ($multishop_override[self::USE_STATUS_REFUND]) {
-                            Configuration::updateValue(self::USE_STATUS_REFUND, $use_status_refund, false, $id_shop_group, $id_shop);
+                        if ($multishopOverride[self::USE_STATUS_REFUND]) {
+                            Configuration::updateValue(self::USE_STATUS_REFUND, $useStatusRefund, false, $idShopGroup, $idShop);
                         }
-                        if ($multishop_override[self::STATUS_REFUND]) {
-                            Configuration::updateValue(self::STATUS_REFUND, $status_refund, false, $id_shop_group, $id_shop);
+                        if ($multishopOverride[self::STATUS_REFUND]) {
+                            Configuration::updateValue(self::STATUS_REFUND, $statusRefund, false, $idShopGroup, $idShop);
                         }
-                        if ($multishop_override[self::USE_STATUS_PARTIAL_REFUND]) {
-                            Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $use_status_partial_refund, false, $id_shop_group, $id_shop);
+                        if ($multishopOverride[self::USE_STATUS_PARTIAL_REFUND]) {
+                            Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $useStatusPartialRefund, false, $idShopGroup, $idShop);
                         }
-                        if ($multishop_override[self::STATUS_PARTIAL_REFUND]) {
-                            Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $status_partial_refund, false, $id_shop_group, $id_shop);
+                        if ($multishopOverride[self::STATUS_PARTIAL_REFUND]) {
+                            Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $statusPartialRefund, false, $idShopGroup, $idShop);
                         }
-                        if ($multishop_override[self::GENERATE_CREDIT_SLIP]) {
-                            Configuration::updateValue(self::GENERATE_CREDIT_SLIP, $generate_credit_slip, false, $id_shop_group, $id_shop);
+                        if ($multishopOverride[self::GENERATE_CREDIT_SLIP]) {
+                            Configuration::updateValue(self::GENERATE_CREDIT_SLIP, $generateCreditSlip, false, $idShopGroup, $idShop);
                         }
                     }
                 } else {
-                    $id_shop = (int)$this->getShopId();
-                    if ($multishop_override[self::STATUS_VALIDATED]) {
-                        Configuration::updateValue(self::STATUS_VALIDATED, $status_validated, false, $id_shop_group, $id_shop);
+                    $idShop = (int) $this->getShopId();
+                    if ($multishopOverride[self::STATUS_VALIDATED]) {
+                        Configuration::updateValue(self::STATUS_VALIDATED, $statusValidated, false, $idShopGroup, $idShop);
                     }
-                    if ($multishop_override[self::USE_STATUS_REFUND]) {
-                        Configuration::updateValue(self::USE_STATUS_REFUND, $use_status_refund, false, $id_shop_group, $id_shop);
+                    if ($multishopOverride[self::USE_STATUS_REFUND]) {
+                        Configuration::updateValue(self::USE_STATUS_REFUND, $useStatusRefund, false, $idShopGroup, $idShop);
                     }
-                    if ($multishop_override[self::STATUS_REFUND]) {
-                        Configuration::updateValue(self::STATUS_REFUND, $status_refund, false, $id_shop_group, $id_shop);
+                    if ($multishopOverride[self::STATUS_REFUND]) {
+                        Configuration::updateValue(self::STATUS_REFUND, $statusRefund, false, $idShopGroup, $idShop);
                     }
-                    if ($multishop_override[self::USE_STATUS_PARTIAL_REFUND]) {
-                        Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $use_status_partial_refund, false, $id_shop_group, $id_shop);
+                    if ($multishopOverride[self::USE_STATUS_PARTIAL_REFUND]) {
+                        Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $useStatusPartialRefund, false, $idShopGroup, $idShop);
                     }
-                    if ($multishop_override[self::STATUS_PARTIAL_REFUND]) {
-                        Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $status_partial_refund, false, $id_shop_group, $id_shop);
+                    if ($multishopOverride[self::STATUS_PARTIAL_REFUND]) {
+                        Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $statusPartialRefund, false, $idShopGroup, $idShop);
                     }
-                    if ($multishop_override[self::GENERATE_CREDIT_SLIP]) {
-                        Configuration::updateValue(self::GENERATE_CREDIT_SLIP, $generate_credit_slip, false, $id_shop_group, $id_shop);
+                    if ($multishopOverride[self::GENERATE_CREDIT_SLIP]) {
+                        Configuration::updateValue(self::GENERATE_CREDIT_SLIP, $generateCreditSlip, false, $idShopGroup, $idShop);
                     }
                 }
             }
         } else {
-            Configuration::updateValue(self::STATUS_VALIDATED, $status_validated);
-            Configuration::updateValue(self::USE_STATUS_REFUND, $use_status_refund);
-            Configuration::updateValue(self::STATUS_REFUND, $status_refund);
-            Configuration::updateValue(self::USE_STATUS_PARTIAL_REFUND, $use_status_partial_refund);
-            Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $status_partial_refund);
-            Configuration::updateValue(self::GENERATE_CREDIT_SLIP, $generate_credit_slip);
+            Configuration::updateValue(self::STATUS_VALIDATED, $statusValidated);
+            Configuration::updateValue(self::USE_STATUS_REFUND, $useStatusRefund);
+            Configuration::updateValue(self::STATUS_REFUND, $statusRefund);
+            Configuration::updateValue(self::USE_STATUS_PARTIAL_REFUND, $useStatusPartialRefund);
+            Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $statusPartialRefund);
+            Configuration::updateValue(self::GENERATE_CREDIT_SLIP, $generateCreditSlip);
         }
     }
 
@@ -763,74 +765,75 @@ class MDStripe extends PaymentModule
      */
     protected function processRefund()
     {
-        $id_order = (int)Tools::getValue('stripe_refund_order');
-        $amount = (float)Tools::getValue('stripe_refund_amount');
+        $idOrder = (int) Tools::getValue('stripe_refund_order');
+        $amount = (float) Tools::getValue('stripe_refund_amount');
 
-        $id_charge = StripeTransaction::getChargeByIdOrder($id_order);
-        $order = new Order($id_order);
+        $idCharge = StripeTransaction::getChargeByIdOrder($idOrder);
+        $order = new Order($idOrder);
         $currency = new Currency($order->id_currency);
-        $order_total = $order->getTotalPaid();
+        $orderTotal = $order->getTotalPaid();
 
-        if (!in_array(Tools::strtolower($currency->iso_code), self::$zero_decimal_currencies)) {
-            $amount = (int)($amount * 100);
-            $order_total = (int)($order_total * 100);
+        if (!in_array(Tools::strtolower($currency->iso_code), self::$zeroDecimalCurrencies)) {
+            $amount = (int) ($amount * 100);
+            $orderTotal = (int) ($orderTotal * 100);
         }
 
-        $amount_refunded = StripeTransaction::getRefundedAmountByOrderId($id_order);
+        $amountRefunded = StripeTransaction::getRefundedAmountByOrderId($idOrder);
 
         try {
             \Stripe\Stripe::setApiKey(Configuration::get(MDStripe::SECRET_KEY));
             \Stripe\Refund::create(array(
-                'charge' => $id_charge,
+                'charge' => $idCharge,
                 'amount' => $amount,
                 'metadata' => array(
-                    'from_back_office' => 'true'
+                    'from_back_office' => 'true',
                 ),
             ));
         } catch (\Stripe\Error\InvalidRequest $e) {
             $this->context->controller->errors[] = sprintf('Invalid Stripe request: %s', $e->getMessage());
+
             return;
         }
-        
-        if (Configuration::get(MDStripe::USE_STATUS_REFUND) && (int)($order_total - ($amount_refunded + $amount)) === 0) {
+
+        if (Configuration::get(MDStripe::USE_STATUS_REFUND) && 0 === (int) ($orderTotal - ($amountRefunded + $amount))) {
             // Full refund
             if (Configuration::get(MDStripe::GENERATE_CREDIT_SLIP)) {
                 $sql = new DbQuery();
                 $sql->select('od.`id_order_detail`, od.`product_quantity`');
                 $sql->from('order_detail', 'od');
-                $sql->where('od.`id_order` = '.(int)$order->id);
+                $sql->where('od.`id_order` = '.(int) $order->id);
 
-                $full_product_list = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+                $fullProductList = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
 
-                if (is_array($full_product_list) && !empty($full_product_list)) {
-                    $product_list = array();
-                    $quantity_list = array();
-                    foreach ($full_product_list as $db_order_detail) {
-                        $id_order_detail = (int)$db_order_detail['id_order_detail'];
-                        $product_list[] = (int)$id_order_detail;
-                        $quantity_list[$id_order_detail] = (int)$db_order_detail['product_quantity'];
+                if (is_array($fullProductList) && !empty($fullProductList)) {
+                    $productList = array();
+                    $quantityList = array();
+                    foreach ($fullProductList as $dbOrderDetail) {
+                        $idOrderDetail = (int) $dbOrderDetail['id_order_detail'];
+                        $productList[] = (int) $idOrderDetail;
+                        $quantityList[$idOrderDetail] = (int) $dbOrderDetail['product_quantity'];
                     }
-                    OrderSlip::createOrderSlip($order, $product_list, $quantity_list, $order->getShipping());
+                    OrderSlip::createOrderSlip($order, $productList, $quantityList, $order->getShipping());
                 }
             }
 
             $transaction = new StripeTransaction();
-            $transaction->card_last_digits = (int)StripeTransaction::getLastFourDigitsByChargeId($id_charge);
-            $transaction->id_charge = $id_charge;
+            $transaction->card_last_digits = (int)StripeTransaction::getLastFourDigitsByChargeId($idCharge);
+            $transaction->id_charge = $idCharge;
             $transaction->amount = $amount;
             $transaction->id_order = $order->id;
             $transaction->type = StripeTransaction::TYPE_FULL_REFUND;
             $transaction->source = StripeTransaction::SOURCE_BACK_OFFICE;
             $transaction->add();
 
-            $order_history = new OrderHistory();
-            $order_history->id_order = $order->id;
-            $order_history->changeIdOrderState((int)Configuration::get(MDStripe::STATUS_REFUND), $id_order);
-            $order_history->addWithemail(true);
+            $orderHistory = new OrderHistory();
+            $orderHistory->id_order = $order->id;
+            $orderHistory->changeIdOrderState((int)Configuration::get(MDStripe::STATUS_REFUND), $idOrder);
+            $orderHistory->addWithemail(true);
         } else {
             $transaction = new StripeTransaction();
-            $transaction->card_last_digits = (int)StripeTransaction::getLastFourDigitsByChargeId($id_charge);
-            $transaction->id_charge = $id_charge;
+            $transaction->card_last_digits = (int)StripeTransaction::getLastFourDigitsByChargeId($idCharge);
+            $transaction->id_charge = $idCharge;
             $transaction->amount = $amount;
             $transaction->id_order = $order->id;
             $transaction->type = StripeTransaction::TYPE_PARTIAL_REFUND;
@@ -838,14 +841,14 @@ class MDStripe extends PaymentModule
             $transaction->add();
 
             if (Configuration::get(MDStripe::USE_STATUS_PARTIAL_REFUND)) {
-                $order_history = new OrderHistory();
-                $order_history->id_order = $order->id;
-                $order_history->changeIdOrderState((int)Configuration::get(MDStripe::STATUS_PARTIAL_REFUND), $id_order);
-                $order_history->addWithemail(true);
+                $orderHistory = new OrderHistory();
+                $orderHistory->id_order = $order->id;
+                $orderHistory->changeIdOrderState((int)Configuration::get(MDStripe::STATUS_PARTIAL_REFUND), $idOrder);
+                $orderHistory->addWithemail(true);
             }
         }
 
-        Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$id_order);
+        Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true).'&vieworder&id_order='.$idOrder);
     }
 
     /**
@@ -861,7 +864,7 @@ class MDStripe extends PaymentModule
             $cookie = $params['cookie'];
         }
 
-        $stripe_email = $cookie->email;
+        $stripeEmail = $cookie->email;
 
         /** @var Cart $cart */
         $cart = $params['cart'];
@@ -869,15 +872,15 @@ class MDStripe extends PaymentModule
 
         $link = $this->context->link;
 
-        $stripe_amount = $cart->getOrderTotal();
-        if (!in_array(Tools::strtolower($currency->iso_code), self::$zero_decimal_currencies)) {
-            $stripe_amount = (int)($stripe_amount * 100);
+        $stripeAmount = $cart->getOrderTotal();
+        if (!in_array(Tools::strtolower($currency->iso_code), self::$zeroDecimalCurrencies)) {
+            $stripeAmount = (int)($stripeAmount * 100);
         }
 
         $this->context->smarty->assign(array(
-            'stripe_email' => $stripe_email,
+            'stripe_email' => $stripeEmail,
             'stripe_currency' => $currency->iso_code,
-            'stripe_amount' => $stripe_amount,
+            'stripe_amount' => $stripeAmount,
             'id_cart' => (int)$cart->id,
             'stripe_secret_key' => Configuration::get(self::SECRET_KEY),
             'stripe_publishable_key' => Configuration::get(self::PUBLISHABLE_KEY),
@@ -908,13 +911,13 @@ class MDStripe extends PaymentModule
             return array();
         }
 
-        $payment_options = array(
+        $paymentOptions = array(
             'cta_text' => $this->l('Pay with Stripe'),
             'logo' => Media::getMediaPath($this->local_path.'views/img/stripebtnlogo.png'),
             'action' => $this->context->link->getModuleLink($this->name, 'eupayment', array(), true),
         );
 
-        return $payment_options;
+        return $paymentOptions;
     }
 
     /**
@@ -936,7 +939,7 @@ class MDStripe extends PaymentModule
 
         /** @var Cookie $email */
         $cookie = $params['cookie'];
-        $stripe_email = $cookie->email;
+        $stripeEmail = $cookie->email;
 
         /** @var Cart $cart */
         $cart = $params['cart'];
@@ -944,15 +947,15 @@ class MDStripe extends PaymentModule
 
         $link = $this->context->link;
 
-        $stripe_amount = $cart->getOrderTotal();
-        if (!in_array(Tools::strtolower($currency->iso_code), self::$zero_decimal_currencies)) {
-            $stripe_amount = (int)($stripe_amount * 100);
+        $stripeAmount = $cart->getOrderTotal();
+        if (!in_array(Tools::strtolower($currency->iso_code), self::$zeroDecimalCurrencies)) {
+            $stripeAmount = (int)($stripeAmount * 100);
         }
 
         $this->context->smarty->assign(array(
-            'stripe_email' => $stripe_email,
+            'stripe_email' => $stripeEmail,
             'stripe_currency' => $currency->iso_code,
-            'stripe_amount' => $stripe_amount,
+            'stripe_amount' => $stripeAmount,
             'id_cart' => (int)$cart->id,
             'stripe_secret_key' => Configuration::get(self::SECRET_KEY),
             'stripe_publishable_key' => Configuration::get(self::PUBLISHABLE_KEY),
@@ -980,6 +983,7 @@ class MDStripe extends PaymentModule
                 ),
             ))
             ->setAdditionalInformation($this->context->smarty->fetch('module:mdstripe/views/templates/hook/17payment.tpl'));
+
         return array($externalOption);
     }
 
@@ -1045,25 +1049,25 @@ class MDStripe extends PaymentModule
             $this->context->controller->addCSS('https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css');
 
             $order = new Order($params['id_order']);
-            $order_currency = new Currency($order->id_currency);
+            $orderCurrency = new Currency($order->id_currency);
 
-            $total_refund_left = $order->getTotalPaid();
-            if (!in_array(Tools::strtolower($order_currency->iso_code), MDStripe::$zero_decimal_currencies)) {
-                $total_refund_left = (int)(Tools::ps_round($total_refund_left * 100, 0));
+            $totalRefundLeft = $order->getTotalPaid();
+            if (!in_array(Tools::strtolower($orderCurrency->iso_code), MDStripe::$zeroDecimalCurrencies)) {
+                $totalRefundLeft = (int) (Tools::ps_round($totalRefundLeft * 100, 0));
             }
 
             $amount = (int)StripeTransaction::getRefundedAmountByOrderId($order->id);
 
-            $total_refund_left -= $amount;
+            $totalRefundLeft -= $amount;
 
-            if (!in_array(Tools::strtolower($order_currency->iso_code), MDStripe::$zero_decimal_currencies)) {
-                $total_refund_left = (float)($total_refund_left / 100);
+            if (!in_array(Tools::strtolower($orderCurrency->iso_code), MDStripe::$zeroDecimalCurrencies)) {
+                $totalRefundLeft = (float) ($totalRefundLeft / 100);
             }
-            
+
             $this->context->smarty->assign(array(
                 'stripe_transaction_list' => $this->renderAdminOrderTransactionList($params['id_order']),
-                'stripe_currency_symbol' => $order_currency->sign,
-                'stripe_total_amount' => $total_refund_left,
+                'stripe_currency_symbol' => $orderCurrency->sign,
+                'stripe_total_amount' => $totalRefundLeft,
                 'stripe_module_refund_action' => $this->context->link->getAdminLink('AdminModules', true).
                     '&configure=mdstripe&tab_module=payments_gateways&module_name=mdstripe&orderstriperefund',
                 'id_order' => (int)$order->id,
@@ -1082,7 +1086,7 @@ class MDStripe extends PaymentModule
         $order = new Order($id_order);
         $currency = new Currency($order->id_currency);
 
-        if (!in_array(Tools::strtolower($currency->iso_code), MDStripe::$zero_decimal_currencies)) {
+        if (!in_array(Tools::strtolower($currency->iso_code), MDStripe::$zeroDecimalCurrencies)) {
             foreach ($results as &$result) {
                 // Process results
                 $result['amount'] = (float)($result['amount'] / 100);
@@ -1124,19 +1128,19 @@ class MDStripe extends PaymentModule
             }
         }
 
-        $helper_list = new HelperList();
-        $helper_list->id = 1;
+        $helperList = new HelperList();
+        $helperList->id = 1;
 
-        $helper_list->list_id = 'stripe_transaction';
-        $helper_list->shopLinkType = false;
+        $helperList->list_id = 'stripe_transaction';
+        $helperList->shopLinkType = false;
 
-        $helper_list->no_link = true;
+        $helperList->no_link = true;
 
-        $helper_list->_defaultOrderBy = 'date_add';
+        $helperList->_defaultOrderBy = 'date_add';
 
-        $helper_list->simple_header = true;
+        $helperList->simple_header = true;
 
-        $helper_list->module = $this;
+        $helperList->module = $this;
 
         $fields_list = array(
             'id_stripe_transaction' => array('title' => $this->l('ID'), 'width' => 'auto'),
@@ -1147,23 +1151,23 @@ class MDStripe extends PaymentModule
             'date_upd' => array('type' => 'datetime', 'title' => $this->l('Date & time'), 'width' => 'auto'),
         );
 
-        $helper_list->identifier = 'id_stripe_transaction';
-        $helper_list->title = $this->l('Transactions');
-        $helper_list->token = Tools::getAdminTokenLite('AdminOrders');
-        $helper_list->currentIndex = AdminController::$currentIndex.'&'.
+        $helperList->identifier = 'id_stripe_transaction';
+        $helperList->title = $this->l('Transactions');
+        $helperList->token = Tools::getAdminTokenLite('AdminOrders');
+        $helperList->currentIndex = AdminController::$currentIndex.'&'.
             http_build_query(array(
                     'id_order' => $id_order,
                 )
             );
 
         // Hide actions
-        $helper_list->tpl_vars['show_filters'] = false;
-        $helper_list->actions = true;
-        $helper_list->bulk_actions = false;
+        $helperList->tpl_vars['show_filters'] = false;
+        $helperList->actions = true;
+        $helperList->bulk_actions = false;
 
-        $helper_list->table = 'stripe_transaction';
+        $helperList->table = 'stripe_transaction';
 
-        return $helper_list->generateList($results, $fields_list);
+        return $helperList->generateList($results, $fields_list);
     }
 
     /**
@@ -1204,7 +1208,7 @@ class MDStripe extends PaymentModule
     {
         $language_iso = Tools::strtolower(Tools::substr($locale, 0, 2));
 
-        if (in_array($language_iso, self::$stripe_languages)) {
+        if (in_array($language_iso, self::$stripeLanguages)) {
             return $language_iso;
         }
 
@@ -1416,26 +1420,26 @@ class MDStripe extends PaymentModule
         return $sql_filter;
     }
 
-    protected function filterToField($fields_list, $key, $filter)
+    protected function filterToField($fieldsList, $key, $filter)
     {
-        foreach ($fields_list as $field) {
+        foreach ($fieldsList as $field) {
             if (array_key_exists('filter_key', $field) && $field['filter_key'] == $key) {
                 return $field;
             }
         }
-        if (array_key_exists($filter, $fields_list)) {
-            return $fields_list[$filter];
+        if (array_key_exists($filter, $fieldsList)) {
+            return $fieldsList[$filter];
         }
         return false;
     }
 
-    protected function getCurrencyIdByOrderId($id_order)
+    protected function getCurrencyIdByOrderId($idOrder)
     {
-        $order = new Order($id_order);
+        $order = new Order($idOrder);
         if (Validate::isLoadedObject($order)) {
             $currency = new Currency($order->id_currency);
         } else {
-            $currency = new Currency((int)Configuration::get('PS_CURRENCY_DEFAULT'));
+            $currency = new Currency((int) Configuration::get('PS_CURRENCY_DEFAULT'));
         }
 
         return $currency;

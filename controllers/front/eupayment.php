@@ -34,7 +34,7 @@ class MdstripeEupaymentModuleFrontController extends ModuleFrontController
 
         /** @var Cookie $email */
         $cookie = $this->context->cookie;
-        $stripe_email = $cookie->email;
+        $stripeEmail = $cookie->email;
 
         /** @var Cart $cart */
         $cart = $this->context->cart;
@@ -42,24 +42,24 @@ class MdstripeEupaymentModuleFrontController extends ModuleFrontController
 
         $link = $this->context->link;
 
-        $stripe_amount = $cart->getOrderTotal();
-        if (!in_array(Tools::strtolower($currency->iso_code), MDStripe::$zero_decimal_currencies)) {
-            $stripe_amount = (int)($stripe_amount * 100);
+        $stripeAmount = $cart->getOrderTotal();
+        if (!in_array(Tools::strtolower($currency->iso_code), MDStripe::$zeroDecimalCurrencies)) {
+            $stripeAmount = (int) ($stripeAmount * 100);
         }
 
 
         $this->context->smarty->assign(array(
-            'stripe_email' => $stripe_email,
+            'stripe_email' => $stripeEmail,
             'stripe_currency' => $currency->iso_code,
-            'stripe_amount' => $stripe_amount,
+            'stripe_amount' => $stripeAmount,
             'stripe_confirmation_page' => $link->getModuleLink('mdstripe', 'validation'),
             'id_cart' => (int)$cart->id,
             'stripe_secret_key' => Configuration::get(MDStripe::SECRET_KEY),
             'stripe_publishable_key' => Configuration::get(MDStripe::PUBLISHABLE_KEY),
             'stripe_locale' => MDStripe::getStripeLanguage($this->context->language->language_code),
-            'stripe_zipcode' => (bool)Configuration::get(MDStripe::ZIPCODE),
-            'stripe_bitcoin' => (bool)Configuration::get(MDStripe::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
-            'stripe_alipay' => (bool)Configuration::get(MDStripe::ALIPAY),
+            'stripe_zipcode' => (bool) Configuration::get(MDStripe::ZIPCODE),
+            'stripe_bitcoin' => (bool) Configuration::get(MDStripe::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
+            'stripe_alipay' => (bool) Configuration::get(MDStripe::ALIPAY),
             'stripe_shopname' => $this->context->shop->name,
         ));
 

@@ -20,11 +20,20 @@
 require_once dirname(__FILE__).'/../../vendor/autoload.php';
 require_once dirname(__FILE__).'/../../classes/autoload.php';
 
+/**
+ * Class MdstripeValidationModuleFrontController
+ */
 class MdstripeValidationModuleFrontController extends ModuleFrontController
 {
     /** @var MDStripe $module */
     public $module;
 
+    /**
+     * Post process
+     *
+     * @return bool Whether the info has been successfully processed
+     * @throws PrestaShopException
+     */
     public function postProcess()
     {
         if ((Tools::isSubmit('mdstripe-id_cart') == false) || (Tools::isSubmit('mdstripe-token') == false)) {
@@ -35,9 +44,9 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
         }
 
         $token = Tools::getValue('mdstripe-token');
-        $id_cart = Tools::getValue('mdstripe-id_cart');
+        $idCart = Tools::getValue('mdstripe-id_cart');
 
-        $cart = new Cart((int)$id_cart);
+        $cart = new Cart((int) $idCart);
         $customer = new Customer((int)$cart->id_customer);
         $currency = new Currency((int)$cart->id_currency);
 
@@ -49,7 +58,7 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
         \Stripe\Stripe::setApiKey($stripe['secret_key']);
 
         try {
-            $stripe_customer = \Stripe\Customer::create(array(
+            $stripeCustomer = \Stripe\Customer::create(array(
                 'email' => $customer->email,
                 'source' => $token
             ));
@@ -60,16 +69,16 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
             return false;
         }
 
-        $stripe_amount = $cart->getOrderTotal();
-        if (!in_array(Tools::strtolower($currency->iso_code), MDStripe::$zero_decimal_currencies)) {
-            $stripe_amount = (int)($stripe_amount * 100);
+        $stripeAmount = $cart->getOrderTotal();
+        if (!in_array(Tools::strtolower($currency->iso_code), MDStripe::$zeroDecimalCurrencies)) {
+            $stripeAmount = (int) ($stripeAmount * 100);
         }
 
         try {
-            $stripe_charge = \Stripe\Charge::create(
+            $stripeCharge = \Stripe\Charge::create(
                 array(
-                    'customer' => $stripe_customer->id,
-                    'amount' => $stripe_amount,
+                    'customer' => $stripeCustomer->id,
+                    'amount' => $stripeAmount,
                     'currency' => Tools::strtolower($currency->iso_code),
                 )
             );
@@ -80,37 +89,37 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
             return false;
         }
 
-        if ($stripe_charge->paid === true) {
-            $payment_status = Configuration::get(MDStripe::STATUS_VALIDATED);
+        if ($stripeCharge->paid === true) {
+            $paymentStatus = Configuration::get(MDStripe::STATUS_VALIDATED);
             $message = null;
 
             /**
              * Converting cart into a valid order
              */
-            $currency_id = (int)Context::getContext()->currency->id;
+            $currencyId = (int) Context::getContext()->currency->id;
 
-            $this->module->validateOrder($id_cart, $payment_status, $cart->getOrderTotal(), 'Stripe', $message, array(), $currency_id, false, $cart->secure_key);
+            $this->module->validateOrder($idCart, $paymentStatus, $cart->getOrderTotal(), 'Stripe', $message, array(), $currencyId, false, $cart->secure_key);
 
             /**
              * If the order has been validated we try to retrieve it
              */
-            $id_order = Order::getOrderByCartId((int)$cart->id);
+            $idOrder = Order::getOrderByCartId((int)$cart->id);
 
-            if ($id_order) {
+            if ($idOrder) {
                 // Log transaction
-                $stripe_transaction = new StripeTransaction();
-                $stripe_transaction->card_last_digits = (int)$stripe_charge->source['last4'];
-                $stripe_transaction->id_charge = $stripe_charge->id;
-                $stripe_transaction->amount = $stripe_amount;
-                $stripe_transaction->id_order = $id_order;
-                $stripe_transaction->type = StripeTransaction::TYPE_CHARGE;
-                $stripe_transaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
-                $stripe_transaction->add();
+                $stripeTransaction = new StripeTransaction();
+                $stripeTransaction->card_last_digits = (int)$stripeCharge->source['last4'];
+                $stripeTransaction->id_charge = $stripeCharge->id;
+                $stripeTransaction->amount = $stripeAmount;
+                $stripeTransaction->id_order = $idOrder;
+                $stripeTransaction->type = StripeTransaction::TYPE_CHARGE;
+                $stripeTransaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
+                $stripeTransaction->add();
 
                 /**
                  * The order has been placed so we redirect the customer on the confirmation page.
                  */
-                Tools::redirect('index.php?controller=order-confirmation&id_cart='.$cart->id.'&id_module='.$this->module->id.'&id_order='.$id_order.'&key='.$customer->secure_key);
+                Tools::redirect('index.php?controller=order-confirmation&id_cart='.$cart->id.'&id_module='.$this->module->id.'&id_order='.$idOrder.'&key='.$customer->secure_key);
             } else {
                 /**
                  * An error occurred and is shown on a new page.
@@ -121,14 +130,14 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
                 return false;
             }
         } else {
-            $stripe_transaction = new StripeTransaction();
-            $stripe_transaction->card_last_digits = (int)$stripe_charge->source['last4'];
-            $stripe_transaction->id_charge = $stripe_charge->id;
-            $stripe_transaction->amount = 0;
-            $stripe_transaction->id_order = 0;
-            $stripe_transaction->type = StripeTransaction::TYPE_CHARGE_FAIL;
-            $stripe_transaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
-            $stripe_transaction->add();
+            $stripeTransaction = new StripeTransaction();
+            $stripeTransaction->card_last_digits = (int) $stripeCharge->source['last4'];
+            $stripeTransaction->id_charge = $stripeCharge->id;
+            $stripeTransaction->amount = 0;
+            $stripeTransaction->id_order = 0;
+            $stripeTransaction->type = StripeTransaction::TYPE_CHARGE_FAIL;
+            $stripeTransaction->source = StripeTransaction::SOURCE_FRONT_OFFICE;
+            $stripeTransaction->add();
         }
 
         /**
@@ -136,6 +145,7 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
          */
         $this->errors[] = $this->module->l('An error occurred. Please contact us for more information.');
         $this->setTemplate('error.tpl');
+
         return false;
     }
 }

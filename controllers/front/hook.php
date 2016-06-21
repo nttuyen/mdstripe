@@ -20,11 +20,17 @@
 require_once dirname(__FILE__).'/../../vendor/autoload.php';
 require_once dirname(__FILE__).'/../../classes/autoload.php';
 
+/**
+ * Class MdstripeHookModuleFrontController
+ */
 class MdstripeHookModuleFrontController extends ModuleFrontController
 {
     /** @var MDStripe $module */
     public $module;
 
+    /**
+     * Post process
+     */
     public function postProcess()
     {
         $body = Tools::file_get_contents('php://input');
@@ -59,17 +65,17 @@ class MdstripeHookModuleFrontController extends ModuleFrontController
         $charge = $event->data['object'];
 
         $refunds = array();
-        $previous_attributes = array();
+        $previousAttributes = array();
 
         if (isset($charge['previous_attributes'][0]['refunds']['data'])) {
-            foreach ($charge['previous_attributes'][0]['refunds']['data'] as $previous_attribute) {
-                $previous_attributes[] = $previous_attribute['id'];
+            foreach ($charge['previous_attributes'][0]['refunds']['data'] as $previousAttribute) {
+                $previousAttributes[] = $previousAttribute['id'];
             }
         }
 
         // Remove previous attributes
         foreach ($charge['refunds']['data'] as $refund) {
-            if (!in_array($refund['id'], $previous_attributes)) {
+            if (!in_array($refund['id'], $previousAttributes)) {
                 $refunds[] = $refund;
             }
         }
@@ -80,44 +86,44 @@ class MdstripeHookModuleFrontController extends ModuleFrontController
             }
         }
 
-        if (!$id_order = StripeTransaction::getIdOrderByCharge($charge->id)) {
+        if (!$idOrder = StripeTransaction::getIdOrderByCharge($charge->id)) {
             die('ok');
         }
 
-        $order = new Order($id_order);
+        $order = new Order($idOrder);
 
-        $total_amount = $order->getTotalPaid();
+        $totalAmount = $order->getTotalPaid();
 
-        if (!in_array($charge->currency, MDStripe::$zero_decimal_currencies)) {
-            $total_amount = (int)(Tools::ps_round($total_amount * 100, 0));
+        if (!in_array($charge->currency, MDStripe::$zeroDecimalCurrencies)) {
+            $totalAmount = (int) (Tools::ps_round($totalAmount * 100, 0));
         }
 
-        $amount_refunded = (int)$charge->amount_refunded;
+        $amountRefunded = (int) $charge->amount_refunded;
 
-        if (Configuration::get(MDStripe::USE_STATUS_REFUND) && (int)($amount_refunded - $total_amount) === 0) {
+        if (Configuration::get(MDStripe::USE_STATUS_REFUND) && (int) ($amountRefunded - $totalAmount) === 0) {
             // Full refund
             if (Configuration::get(MDStripe::GENERATE_CREDIT_SLIP)) {
                 $sql = new DbQuery();
                 $sql->select('od.`id_order_detail`, od.`product_quantity`');
                 $sql->from('order_detail', 'od');
-                $sql->where('od.`id_order` = '.(int)$order->id);
+                $sql->where('od.`id_order` = '.(int) $order->id);
 
-                $full_product_list = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+                $fullProductList = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
 
-                if (is_array($full_product_list) && !empty($full_product_list)) {
-                    $product_list = array();
-                    $quantity_list = array();
-                    foreach ($full_product_list as $db_order_detail) {
-                        $id_order_detail = (int)$db_order_detail['id_order_detail'];
-                        $product_list[] = (int)$id_order_detail;
-                        $quantity_list[$id_order_detail] = (int)$db_order_detail['product_quantity'];
+                if (is_array($fullProductList) && !empty($fullProductList)) {
+                    $productList = array();
+                    $quantityList = array();
+                    foreach ($fullProductList as $dbOrderDetail) {
+                        $idOrderDetail = (int) $dbOrderDetail['id_order_detail'];
+                        $productList[] = (int) $idOrderDetail;
+                        $quantityList[$idOrderDetail] = (int) $dbOrderDetail['product_quantity'];
                     }
-                    OrderSlip::createOrderSlip($order, $product_list, $quantity_list, $order->getShipping());
+                    OrderSlip::createOrderSlip($order, $productList, $quantityList, $order->getShipping());
                 }
             }
 
             $transaction = new StripeTransaction();
-            $transaction->card_last_digits = (int)$charge->source['last4'];
+            $transaction->card_last_digits = (int) $charge->source['last4'];
             $transaction->id_charge = $charge->id;
             $transaction->amount = $charge->amount_refunded - StripeTransaction::getRefundedAmount($charge->id);
             $transaction->id_order = $order->id;
@@ -125,13 +131,13 @@ class MdstripeHookModuleFrontController extends ModuleFrontController
             $transaction->source = StripeTransaction::SOURCE_WEBHOOK;
             $transaction->add();
 
-            $order_history = new OrderHistory();
-            $order_history->id_order = $order->id;
-            $order_history->changeIdOrderState((int)Configuration::get(MDStripe::STATUS_REFUND), $id_order);
-            $order_history->addWithemail(true);
+            $orderHistory = new OrderHistory();
+            $orderHistory->id_order = $order->id;
+            $orderHistory->changeIdOrderState((int) Configuration::get(MDStripe::STATUS_REFUND), $idOrder);
+            $orderHistory->addWithemail(true);
         } else {
             $transaction = new StripeTransaction();
-            $transaction->card_last_digits = (int)$charge->source['last4'];
+            $transaction->card_last_digits = (int) $charge->source['last4'];
             $transaction->id_charge = $charge->id;
             $transaction->amount = $charge->amount_refunded - StripeTransaction::getRefundedAmount($charge->id);
             $transaction->id_order = $order->id;
@@ -140,10 +146,10 @@ class MdstripeHookModuleFrontController extends ModuleFrontController
             $transaction->add();
 
             if (Configuration::get(MDStripe::USE_STATUS_PARTIAL_REFUND)) {
-                $order_history = new OrderHistory();
-                $order_history->id_order = $order->id;
-                $order_history->changeIdOrderState((int)Configuration::get(MDStripe::STATUS_PARTIAL_REFUND), $id_order);
-                $order_history->addWithemail(true);
+                $orderHistory = new OrderHistory();
+                $orderHistory->id_order = $order->id;
+                $orderHistory->changeIdOrderState((int) Configuration::get(MDStripe::STATUS_PARTIAL_REFUND), $idOrder);
+                $orderHistory->addWithemail(true);
             }
         }
     }
