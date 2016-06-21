@@ -46,6 +46,8 @@ class MDStripe extends PaymentModule
     const USE_STATUS_REFUND = 'MDSTRIPE_USE_STAT_REFUND';
     const GENERATE_CREDIT_SLIP = 'MDSTRIPE_CREDIT_SLIP';
 
+    const SHOW_PAYMENT_LOGOS = 'MDSTRIPE_PAYMENT_LOGOS';
+
     const OPTIONS_MODULE_SETTINGS = 1;
 
     const TLS_OK = 'MDSTRIPE_TLS_OK';
@@ -149,6 +151,7 @@ class MDStripe extends PaymentModule
         Configuration::deleteByName(self::ZIPCODE);
         Configuration::deleteByName(self::ALIPAY);
         Configuration::deleteByName(self::BITCOIN);
+        Configuration::deleteByName(self::SHOW_PAYMENT_LOGOS);
 
         return parent::uninstall();
     }
@@ -318,6 +321,14 @@ class MDStripe extends PaymentModule
                         'type' => 'bool',
                         'name' => self::ALIPAY,
                         'value' => Configuration::get(self::ALIPAY),
+                        'validation' => 'isBool',
+                        'cast' => 'intval',
+                    ),
+                    self::SHOW_PAYMENT_LOGOS => array(
+                        'title' => $this->l('Show payment logos'),
+                        'type' => 'bool',
+                        'name' => self::SHOW_PAYMENT_LOGOS,
+                        'value' => Configuration::get(self::SHOW_PAYMENT_LOGOS),
                         'validation' => 'isBool',
                         'cast' => 'intval',
                     ),
@@ -588,7 +599,7 @@ class MDStripe extends PaymentModule
         $helperList->currentIndex = AdminController::$currentIndex.'&'.
             http_build_query(array(
                     'configure' => $this->name,
-                    'menu' => self::MENU_TRANSACTIONS
+                    'menu' => self::MENU_TRANSACTIONS,
                 )
             );
 
@@ -630,6 +641,7 @@ class MDStripe extends PaymentModule
         $zipcode = (bool) Tools::getValue(self::ZIPCODE);
         $bitcoin = (bool) Tools::getValue(self::BITCOIN);
         $alipay = (bool) Tools::getValue(self::ALIPAY);
+        $showPaymentLogos = (bool) Tools::getValue(self::SHOW_PAYMENT_LOGOS);
 
         if (Configuration::get('PS_MULTISHOP_FEATURE_ACTIVE')) {
             if (Shop::getContext() == Shop::CONTEXT_ALL) {
@@ -638,6 +650,7 @@ class MDStripe extends PaymentModule
                 $this->updateAllValue(self::ZIPCODE, $zipcode);
                 $this->updateAllValue(self::BITCOIN, $bitcoin);
                 $this->updateAllValue(self::ALIPAY, $alipay);
+                $this->updateAllValue(self::SHOW_PAYMENT_LOGOS, $showPaymentLogos);
             } elseif (is_array(Tools::getValue('multishopOverrideOption'))) {
                 $idShopGroup = (int) Shop::getGroupFromShop($this->getShopId(), true);
                 $multishopOverride = Tools::getValue('multishopOverrideOption');
@@ -658,6 +671,9 @@ class MDStripe extends PaymentModule
                         if ($multishopOverride[self::ALIPAY]) {
                             Configuration::updateValue(self::ALIPAY, $alipay, false, $idShopGroup, $idShop);
                         }
+                        if ($multishopOverride[self::SHOW_PAYMENT_LOGOS]) {
+                            Configuration::updateValue(self::SHOW_PAYMENT_LOGOS, $showPaymentLogos, false, $idShopGroup, $idShop);
+                        }
                     }
                 } else {
                     $idShop = (int)$this->getShopId();
@@ -676,6 +692,9 @@ class MDStripe extends PaymentModule
                     if ($multishopOverride[self::ALIPAY]) {
                         Configuration::updateValue(self::ALIPAY, $alipay, false, $idShopGroup, $idShop);
                     }
+                    if ($multishopOverride[self::SHOW_PAYMENT_LOGOS]) {
+                        Configuration::updateValue(self::SHOW_PAYMENT_LOGOS, $showPaymentLogos, false, $idShopGroup, $idShop);
+                    }
                 }
             }
         } else {
@@ -684,6 +703,7 @@ class MDStripe extends PaymentModule
             Configuration::updateValue(self::ZIPCODE, $zipcode);
             Configuration::updateValue(self::BITCOIN, $bitcoin);
             Configuration::updateValue(self::ALIPAY, $alipay);
+            Configuration::updateValue(self::SHOW_PAYMENT_LOGOS, $showPaymentLogos);
         }
     }
 
@@ -697,7 +717,7 @@ class MDStripe extends PaymentModule
         $statusRefund = Tools::getValue(self::STATUS_REFUND);
         $useStatusPartialRefund = Tools::getValue(self::USE_STATUS_PARTIAL_REFUND);
         $statusPartialRefund = Tools::getValue(self::STATUS_PARTIAL_REFUND);
-        $generateCreditSlip = (bool)Tools::getValue(self::GENERATE_CREDIT_SLIP);
+        $generateCreditSlip = (bool) Tools::getValue(self::GENERATE_CREDIT_SLIP);
 
         if (Configuration::get('PS_MULTISHOP_FEATURE_ACTIVE')) {
             if (Shop::getContext() == Shop::CONTEXT_ALL) {
@@ -708,7 +728,7 @@ class MDStripe extends PaymentModule
                 $this->updateAllValue(self::USE_STATUS_PARTIAL_REFUND, $useStatusPartialRefund);
                 $this->updateAllValue(self::GENERATE_CREDIT_SLIP, $generateCreditSlip);
             } elseif (is_array(Tools::getValue('multishopOverrideOption'))) {
-                $idShopGroup = (int)Shop::getGroupFromShop($this->getShopId(), true);
+                $idShopGroup = (int) Shop::getGroupFromShop($this->getShopId(), true);
                 $multishopOverride = Tools::getValue('multishopOverrideOption');
                 if (Shop::getContext() == Shop::CONTEXT_GROUP) {
                     foreach (Shop::getShops(false, $this->getShopId()) as $idShop) {
@@ -893,6 +913,7 @@ class MDStripe extends PaymentModule
             'stripe_alipay' => (bool)Configuration::get(self::ALIPAY),
             'stripe_shopname' => $this->context->shop->name,
             'stripe_confirmation_page' => $link->getModuleLink($this->name, 'validation'),
+            'showPaymentLogos' => Configuration::get(self::SHOW_PAYMENT_LOGOS),
         ));
 
         if (Module::isEnabled('onepagecheckoutps')) {
@@ -1026,6 +1047,7 @@ class MDStripe extends PaymentModule
     {
         $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
         $this->context->controller->addCSS($this->local_path.'/views/css/front.css');
+        $this->context->controller->addCSS($this->local_path.'/views/css/paymentfont.min.css');
 
         return '';
     }

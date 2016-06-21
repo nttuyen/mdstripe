@@ -15,7 +15,6 @@
  *  @copyright 2016 Michael Dekker
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
-
 <div class="row">
 	<form id="stripe-form" action="{$stripe_confirmation_page|escape:'htmlall':'UTF-8'}" method="POST">
 		<input type="hidden" name="mdstripe-id_cart" value="{$id_cart|escape:'htmlall':'UTF-8'}">
@@ -31,6 +30,11 @@
 				<a id="mdstripe_payment_link" href="#" title="{l s='Pay with Stripe' mod='mdstripe'}">
 					<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/stripebtnlogo.png" alt="{l s='Pay with Stripe' mod='mdstripe'}" width="64" height="64" />
 					{l s='Pay with Stripe' mod='mdstripe'}
+					{if $showPaymentLogos}
+						<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/creditcards.png" alt="{l s='Credit cards' mod='mdstripe'}" />
+						{if $stripe_alipay}<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/alipay.png" alt="{l s='Alipay' mod='mdstripe'}" />{/if}
+						{if $stripe_bitcoin}<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/bitcoin.png" alt="{l s='Bitcoin' mod='mdstripe'}" />{/if}
+					{/if}
 				</a>
 			{/if}
 		</p>
