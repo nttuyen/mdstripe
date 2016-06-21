@@ -908,9 +908,9 @@ class MDStripe extends PaymentModule
             'stripe_secret_key' => Configuration::get(self::SECRET_KEY),
             'stripe_publishable_key' => Configuration::get(self::PUBLISHABLE_KEY),
             'stripe_locale' => self::getStripeLanguage($this->context->language->language_code),
-            'stripe_zipcode' => (bool)Configuration::get(self::ZIPCODE),
-            'stripe_bitcoin' => (bool)Configuration::get(self::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
-            'stripe_alipay' => (bool)Configuration::get(self::ALIPAY),
+            'stripe_zipcode' => (bool) Configuration::get(self::ZIPCODE),
+            'stripe_bitcoin' => (bool) Configuration::get(self::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
+            'stripe_alipay' => (bool) Configuration::get(self::ALIPAY),
             'stripe_shopname' => $this->context->shop->name,
             'stripe_confirmation_page' => $link->getModuleLink($this->name, 'validation'),
             'showPaymentLogos' => Configuration::get(self::SHOW_PAYMENT_LOGOS),
@@ -1013,6 +1013,9 @@ class MDStripe extends PaymentModule
 
     /**
      * This hook is used to display the order confirmation page.
+     *
+     * @param array $params Hook parameters
+     * @return string Hook HTML
      */
     public function hookPaymentReturn($params)
     {
@@ -1047,7 +1050,6 @@ class MDStripe extends PaymentModule
     {
         $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
         $this->context->controller->addCSS($this->local_path.'/views/css/front.css');
-        $this->context->controller->addCSS($this->local_path.'/views/css/paymentfont.min.css');
 
         return '';
     }
