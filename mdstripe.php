@@ -24,6 +24,9 @@ if (!defined('_PS_VERSION_')) {
 require_once dirname(__FILE__).'/vendor/autoload.php';
 require_once dirname(__FILE__).'/classes/autoload.php';
 
+/**
+ * Class MDStripe
+ */
 class MDStripe extends PaymentModule
 {
     const MENU_SETTINGS = 1;
