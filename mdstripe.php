@@ -39,6 +39,8 @@ class MDStripe extends PaymentModule
     const SECRET_KEY = 'MDSTRIPE_SECRET_KEY';
     const PUBLISHABLE_KEY = 'MDSTRIPE_PUBLISHABLE_KEY';
 
+    const SHOP_THUMB = 'MDSTRIPE_SHOP_THUMB';
+
     const STATUS_VALIDATED = 'MDSTRIPE_STAT_VALIDATED';
     const STATUS_PARTIAL_REFUND = 'MDSTRIPE_STAT_PART_REFUND';
     const USE_STATUS_PARTIAL_REFUND = 'MDSTRIPE_USE_STAT_PART_REFUND';
@@ -887,6 +889,8 @@ class MDStripe extends PaymentModule
             $cookie = $params['cookie'];
         }
 
+        $this->checkShopThumb();
+
         $stripeEmail = $cookie->email;
 
         /** @var Cart $cart */
@@ -914,6 +918,7 @@ class MDStripe extends PaymentModule
             'stripe_shopname' => $this->context->shop->name,
             'stripe_confirmation_page' => $link->getModuleLink($this->name, 'validation'),
             'showPaymentLogos' => Configuration::get(self::SHOW_PAYMENT_LOGOS),
+            'stripeShopThumb' => $this->context->link->getMediaLink('/modules/mdstripe/views/img/shop'.$this->getShopId().'.jpg'),
         ));
 
         if (Module::isEnabled('onepagecheckoutps')) {
@@ -935,10 +940,13 @@ class MDStripe extends PaymentModule
             return array();
         }
 
+        $this->checkShopThumb();
+
         $paymentOptions = array(
             'cta_text' => $this->l('Pay with Stripe'),
             'logo' => Media::getMediaPath($this->local_path.'views/img/stripebtnlogo.png'),
             'action' => $this->context->link->getModuleLink($this->name, 'eupayment', array(), true),
+            'stripeShopThumb' => $this->context->link->getMediaLink('/modules/mdstripe/views/img/shop'.$this->getShopId().'.jpg'),
         );
 
         return $paymentOptions;
@@ -960,6 +968,8 @@ class MDStripe extends PaymentModule
         if (!$this->active) {
             return array();
         }
+
+        $this->checkShopThumb();
 
         /** @var Cookie $email */
         $cookie = $params['cookie'];
@@ -989,6 +999,7 @@ class MDStripe extends PaymentModule
             'stripe_alipay' => (bool)Configuration::get(self::ALIPAY),
             'stripe_shopname' => $this->context->shop->name,
             'stripe_confirmation_page' => $link->getModuleLink($this->name, 'validation'),
+            'stripeShopThumb' => $this->context->link->getMediaLink('/modules/mdstripe/views/img/shop'.$this->getShopId().'.jpg'),
         ));
 
         $externalOption = new PrestaShop\PrestaShop\Core\Payment\PaymentOption();
@@ -1514,5 +1525,21 @@ class MDStripe extends PaymentModule
         }
 
         return $currency;
+    }
+
+    /**
+     * Check if shop thumbnail exists
+     */
+    protected function checkShopThumb()
+    {
+        $dbShopThumb = Configuration::get(self::SHOP_THUMB);
+        if (empty($dbShopThumb) || !file_exists(_PS_IMG_.$dbShopThumb)) {
+            ImageManager::resize(
+                _PS_IMG_DIR_.Configuration::get('PS_LOGO'),
+                _PS_MODULE_DIR_.'mdstripe/views/img/shop'.$this->getShopId().'.jpg',
+                128,
+                128
+            );
+        }
     }
 }
