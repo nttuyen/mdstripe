@@ -64,7 +64,7 @@ class MDStripe extends PaymentModule
 
     const LATEST_VERSION = 'MDSTRIPE_LATEST_VERSION';
     const DOWNLOAD_URL = 'MDSTRIPE_DOWNLOAD_URL';
-    const CHECK_INTERVAL = 0;
+    const CHECK_INTERVAL = 86400;
     const UPDATE_INTERVAL = 60;
 
     const GITHUB_USER = 'firstred';
