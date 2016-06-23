@@ -1,4 +1,4 @@
-# Stripe BETA
+# Stripe
 ![Stripe](/views/img/stripebtnlogo.png)
 
 Accept Payments with Stripe in PrestaShop with this free and open source module.

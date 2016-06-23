@@ -16,9 +16,9 @@
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
 <div class="panel">
-	<h3><i class="icon icon-refresh"></i> {l s='Check for updates' mod='modselfupdate'}</h3>
+	<h3><i class="icon icon-refresh"></i> {l s='Check for updates' mod='mdstripe'}</h3>
 	<p>
-		<strong>{l s='Check if this module needs updates' mod='modselfupdate'}</strong><br />
+		<strong>{l s='Check if this module needs updates' mod='mdstripe'}</strong><br />
 	</p>
 	{if $needsUpdate}
 		<div class="alert alert-warning">
@@ -26,11 +26,11 @@
 		</div>
 	{else}
 		<div class="alert alert-success">
-			{l s='This module is up to date.' mod='modselfupdate'}
+			{l s='This module is up to date.' mod='mdstripe'}
 		</div>
 	{/if}
-	<a class="btn btn-default" href="{$baseUrl}&mdstripeCheckUpdate=1"><i class="icon icon-search"></i> {l s='Check for updates' mod='modselfupdate'}</a>
+	<a class="btn btn-default" href="{$baseUrl}&mdstripeCheckUpdate=1"><i class="icon icon-search"></i> {l s='Check for updates' mod='mdstripe'}</a>
 	{if $needsUpdate}
-		<a class="btn btn-default" href="{$baseUrl}&mdstripeApplyUpdate=1"><i class="icon icon-refresh"></i> {l s='Update module' mod='modselfupdate'}</a>
+		<a class="btn btn-default" href="{$baseUrl}&mdstripeApplyUpdate=1"><i class="icon icon-refresh"></i> {l s='Update module' mod='mdstripe'}</a>
 	{/if}
 </div>
