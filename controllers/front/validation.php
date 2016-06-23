@@ -41,12 +41,12 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
             'orderLink' => $this->context->link->getPageLink($orderProcess, true),
         ));
 
-//        if ((Tools::isSubmit('mdstripe-id_cart') == false) || (Tools::isSubmit('mdstripe-token') == false)) {
+        if ((Tools::isSubmit('mdstripe-id_cart') == false) || (Tools::isSubmit('mdstripe-token') == false)) {
             $this->errors[] = $this->module->l('An error occurred. Please contact us for more information.');
             $this->setTemplate('error.tpl');
 
             return false;
-//        }
+        }
 
         $token = Tools::getValue('mdstripe-token');
         $idCart = Tools::getValue('mdstripe-id_cart');
