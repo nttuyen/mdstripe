@@ -29,8 +29,8 @@
 			{l s='This module is up to date.' mod='modselfupdate'}
 		</div>
 	{/if}
-	<a class="btn btn-default" href="{$baseUrl}&modselfupdateCheckUpdate=1"><i class="icon icon-search"></i> {l s='Check for updates' mod='modselfupdate'}</a>
+	<a class="btn btn-default" href="{$baseUrl}&mdstripeCheckUpdate=1"><i class="icon icon-search"></i> {l s='Check for updates' mod='modselfupdate'}</a>
 	{if $needsUpdate}
-		<a class="btn btn-default" href="{$baseUrl}&modselfupdateApplyUpdate=1"><i class="icon icon-refresh"></i> {l s='Update module' mod='modselfupdate'}</a>
+		<a class="btn btn-default" href="{$baseUrl}&mdstripeApplyUpdate=1"><i class="icon icon-refresh"></i> {l s='Update module' mod='modselfupdate'}</a>
 	{/if}
 </div>
