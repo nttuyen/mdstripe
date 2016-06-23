@@ -224,14 +224,6 @@ class MDStripe extends PaymentModule
                 return $output.$this->renderTransactionsPage();
             default:
                 $this->menu = self::MENU_SETTINGS;
-                $this->context->smarty->assign(array(
-                    'curentVersion' => $this->version,
-                    'latestVersion' => $this->latestVersion,
-                    'lastCheck' => $this->lastCheck,
-                    'needsUpdate' => $this->needsUpdate,
-                    'baseUrl' => $this->baseUrl,
-                ));
-                $output .= $this->context->smarty->fetch($this->local_path.'views/templates/admin/versioncheck.tpl');
 
                 return $output.$this->renderSettingsPage();
         }
@@ -289,9 +281,15 @@ class MDStripe extends PaymentModule
         $this->context->smarty->assign(array(
             'module_url' => $this->moduleUrl.'&menu='.self::MENU_SETTINGS,
             'tls_ok' => (int)Configuration::get(self::TLS_OK),
+            'curentVersion' => $this->version,
+            'latestVersion' => $this->latestVersion,
+            'lastCheck' => $this->lastCheck,
+            'needsUpdate' => $this->needsUpdate,
+            'baseUrl' => $this->baseUrl,
         ));
 
         $output .= $this->context->smarty->fetch($this->local_path.'views/templates/admin/configure.tpl');
+        $output .= $this->context->smarty->fetch($this->local_path.'views/templates/admin/versioncheck.tpl');
         $output .= $this->context->smarty->fetch($this->local_path.'views/templates/admin/tlscheck.tpl');
 
         $output .= $this->renderGeneralOptions();
