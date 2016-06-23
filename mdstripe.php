@@ -108,7 +108,7 @@ class MDStripe extends PaymentModule
     {
         $this->name = 'mdstripe';
         $this->tab = 'payments_gateways';
-        $this->version = '1.0.3';
+        $this->version = '1.0.4';
         $this->author = 'Michael Dekker';
         $this->need_instance = 0;
 
@@ -129,7 +129,7 @@ class MDStripe extends PaymentModule
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
 
         // Only check from Back Office
-        if (defined('_PS_ADMIN_DIR_')) {
+        if (Context::getContext()->cookie->id_employee) {
             $this->lastCheck = Configuration::get(self::LAST_CHECK);
             $this->checkUpdate();
         }
