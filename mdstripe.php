@@ -64,7 +64,7 @@ class MDStripe extends PaymentModule
 
     const LATEST_VERSION = 'MDSTRIPE_LATEST_VERSION';
     const DOWNLOAD_URL = 'MDSTRIPE_DOWNLOAD_URL';
-    const CHECK_INTERVAL = 86400;
+    const CHECK_INTERVAL = 0;
     const UPDATE_INTERVAL = 60;
 
     const GITHUB_USER = 'firstred';
@@ -127,6 +127,12 @@ class MDStripe extends PaymentModule
 
 
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
+
+        // Only check from Back Office
+        if (defined('_PS_ADMIN_DIR_')) {
+            $this->lastCheck = Configuration::get(self::LAST_CHECK);
+            $this->checkUpdate();
+        }
     }
 
     /**
@@ -191,9 +197,6 @@ class MDStripe extends PaymentModule
     public function getContent()
     {
         $output = '';
-
-        $this->lastCheck = Configuration::get(self::LAST_CHECK);
-        $this->checkUpdate();
 
         $this->initNavigation();
 
