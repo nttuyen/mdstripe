@@ -16,14 +16,25 @@
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
 <div class="panel">
-	<h3><i class="icon icon-puzzle-piece"></i> {l s='Stripe BETA' mod='mdstripe'}</h3>
+	<h3><i class="icon icon-puzzle-piece"></i> {l s='Stripe' mod='mdstripe'}</h3>
+	<strong>{l s='Accept payments with Stripe' mod='mdstripe'}</strong>
 	<p>
-		<strong>{l s='Accept payments with Stripe' mod='mdstripe'}</strong><br />
-		{l s='Thank you for testing this module in the BETA phase.' mod='mdstripe'}
-		{l s='This section will contain some basic info about the module.' mod='mdstripe'}<br />
-		{l s='Keep an eye out for updates on this page:' mod='mdstripe'}
-		<a href="https://github.com/firstred/mdstripe/releases">https://github.com/firstred/mdstripe/releases</a>
+		{l s='Thank you for using this module!' mod='mdstripe'}
 	</p>
+	<strong>{l s='Quick start' mod='mdstripe'}</strong>
+	<ol>
+		<li>{l s='Visit' mod='mdstripe'} <a href="https://stripe.com/">https://stripe.com/</a> {l s='and find your API keys.' mod='mdstripe'}</li>
+		<li>{l s='Enter your keys on this page' mod='mdstripe'}</li>
+		<li>{l s='Optionally configure the webhooks and repeat this process for every store if you have multistore enabled' mod='mdstripe'}</li>
+		<li>
+			{l s='You are good to go! Should you find any problems, please check out the' mod='mdstripe'}
+			<a href="https://github.com/firstred/mdstripe/wiki">wiki</a>
+		</li>
+		<li>
+			{l s='If you have found a bug or the wiki didn\'t solve your problem, please open an issue on GitHub:' mod='mdstripe'}
+			<a href="https://github.com/firstred/mdstripe/issues">https://github.com/firstred/mdstripe/issues</a>
+		</li>
+	</ol>
 </div>
 
 <div class="panel">

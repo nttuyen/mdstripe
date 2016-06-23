@@ -26,7 +26,9 @@ module.exports = function(grunt) {
                     {src: 'mdstripe.php', dest: 'mdstripe/'},
                     {src: 'logo.png', dest: 'mdstripe/'},
                     {src: 'logo.gif', dest: 'mdstripe/'},
-                    {src: 'LICENSE', dest: 'mdstripe/'}
+                    {src: 'LICENSE.md', dest: 'mdstripe/'},
+                    {src: 'CONTRIBUTORS.md', dest: 'mdstripe/'},
+                    {src: 'README.md', dest: 'mdstripe/'}
                 ]
             }
         }
