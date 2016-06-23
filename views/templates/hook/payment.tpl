@@ -24,7 +24,7 @@
 			{if $cart->getOrderTotal() < 2}
 				<a href="">
 					<img src="{$domain|cat:$payment_button|escape:'html':'UTF-8'}" alt="{l s='Pay with Stripe' mod='mdstripe'}" />
-					{l s='Minimum amount required in order to pay with my payment module:' mod='mdstripe'} {convertPrice price=2}
+					{l s='Minimum amount required in order to pay with this payment module:' mod='mdstripe'} {convertPrice price=2}
 				</a>
 			{else}
 				<a id="mdstripe_payment_link" href="#" title="{l s='Pay with Stripe' mod='mdstripe'}">
