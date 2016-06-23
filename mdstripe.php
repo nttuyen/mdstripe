@@ -108,7 +108,7 @@ class MDStripe extends PaymentModule
     {
         $this->name = 'mdstripe';
         $this->tab = 'payments_gateways';
-        $this->version = '1.0.0';
+        $this->version = '1.0.1';
         $this->author = 'Michael Dekker';
         $this->need_instance = 0;
 
@@ -148,6 +148,12 @@ class MDStripe extends PaymentModule
             return false;
         }
 
+        if (!parent::install()) {
+            parent::uninstall();
+
+            return false;
+        }
+
         foreach ($this->hooks as $hook) {
             $this->registerHook($hook);
         }
@@ -156,7 +162,7 @@ class MDStripe extends PaymentModule
 
         Configuration::updateGlobalValue(self::LATEST_VERSION, '0.0.0');
 
-        return parent::install();
+        return true;
     }
 
     /**
