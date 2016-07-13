@@ -223,7 +223,7 @@ class MDStripe extends PaymentModule
         $this->context->smarty->assign(array(
             'module_dir' => $this->_path,
             'menutabs' => $this->initNavigation(),
-            'stripe_webhook_url' => $this->context->link->getModuleLink($this->name, 'hook', array(), true),
+            'stripe_webhook_url' => $this->context->link->getModuleLink($this->name, 'hook', array(), Tools::usingSecureMode()),
         ));
 
         $output .= $this->context->smarty->fetch($this->local_path.'views/templates/admin/navbar.tpl');
@@ -966,7 +966,7 @@ class MDStripe extends PaymentModule
             'stripe_bitcoin' => (bool) Configuration::get(self::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
             'stripe_alipay' => (bool) Configuration::get(self::ALIPAY),
             'stripe_shopname' => $this->context->shop->name,
-            'stripe_confirmation_page' => $link->getModuleLink($this->name, 'validation'),
+            'stripe_confirmation_page' => $link->getModuleLink($this->name, 'validation', array(), Tools::usingSecureMode()),
             'showPaymentLogos' => Configuration::get(self::SHOW_PAYMENT_LOGOS),
             'stripeShopThumb' => $this->context->link->getMediaLink('/modules/mdstripe/views/img/shop'.$this->getShopId().'.jpg'),
         ));
@@ -995,7 +995,7 @@ class MDStripe extends PaymentModule
         $paymentOptions = array(
             'cta_text' => $this->l('Pay with Stripe'),
             'logo' => Media::getMediaPath($this->local_path.'views/img/stripebtnlogo.png'),
-            'action' => $this->context->link->getModuleLink($this->name, 'eupayment', array(), true),
+            'action' => $this->context->link->getModuleLink($this->name, 'eupayment', array(), Tools::usingSecureMode()),
             'stripeShopThumb' => $this->context->link->getMediaLink('/modules/mdstripe/views/img/shop'.$this->getShopId().'.jpg'),
         );
 
@@ -1048,13 +1048,13 @@ class MDStripe extends PaymentModule
             'stripe_bitcoin' => (bool)Configuration::get(self::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
             'stripe_alipay' => (bool)Configuration::get(self::ALIPAY),
             'stripe_shopname' => $this->context->shop->name,
-            'stripe_confirmation_page' => $link->getModuleLink($this->name, 'validation'),
+            'stripe_confirmation_page' => $link->getModuleLink($this->name, 'validation', array(), Tools::usingSecureMode()),
             'stripeShopThumb' => $this->context->link->getMediaLink('/modules/mdstripe/views/img/shop'.$this->getShopId().'.jpg'),
         ));
 
         $externalOption = new PrestaShop\PrestaShop\Core\Payment\PaymentOption();
         $externalOption->setCallToActionText($this->l('Pay with Stripe'))
-            ->setAction($this->context->link->getModuleLink($this->name, 'validation', array(), true))
+            ->setAction($this->context->link->getModuleLink($this->name, 'validation', array(), Tools::usingSecureMode()))
             ->setInputs(array(
                 'token' => array(
                     'name' => 'mdstripe-token',
@@ -1295,9 +1295,7 @@ class MDStripe extends PaymentModule
      */
     public function getShopId()
     {
-        $cookie = Context::getContext()->cookie->getFamily('shopContext');
-
-        return (int) Tools::substr($cookie['shopContext'], 2, count($cookie['shopContext']));
+        return (int) Context::getContext()->shop->id;
     }
 
     /**
@@ -1395,7 +1393,8 @@ class MDStripe extends PaymentModule
      */
     protected function getSelectedPagination($idList, $defaultPagination = 50)
     {
-        $selectedPagination = Tools::getValue($idList.'_pagination',
+        $selectedPagination = Tools::getValue(
+            $idList.'_pagination',
             isset($this->context->cookie->{$idList.'_pagination'}) ? $this->context->cookie->{$idList.'_pagination'} : $defaultPagination
         );
 
