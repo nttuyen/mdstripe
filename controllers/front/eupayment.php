@@ -53,7 +53,7 @@ class MdstripeEupaymentModuleFrontController extends ModuleFrontController
             'stripe_currency' => $currency->iso_code,
             'stripe_amount' => $stripeAmount,
             'stripe_confirmation_page' => $link->getModuleLink('mdstripe', 'validation'),
-            'id_cart' => (int)$cart->id,
+            'id_cart' => (int) $cart->id,
             'stripe_secret_key' => Configuration::get(MDStripe::SECRET_KEY),
             'stripe_publishable_key' => Configuration::get(MDStripe::PUBLISHABLE_KEY),
             'stripe_locale' => MDStripe::getStripeLanguage($this->context->language->language_code),
@@ -61,6 +61,8 @@ class MdstripeEupaymentModuleFrontController extends ModuleFrontController
             'stripe_bitcoin' => (bool) Configuration::get(MDStripe::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
             'stripe_alipay' => (bool) Configuration::get(MDStripe::ALIPAY),
             'stripe_shopname' => $this->context->shop->name,
+            'stripe_collect_billing' => Configuration::get(self::COLLECT_BILLING),
+            'stripe_collect_shipping' => Configuration::get(self::COLLECT_SHIPPING),
         ));
 
         $this->setTemplate('eupayment.tpl');

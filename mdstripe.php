@@ -33,6 +33,8 @@ class MDStripe extends PaymentModule
     const MENU_TRANSACTIONS = 2;
 
     const ZIPCODE = 'MDSTRIPE_ZIPCODE';
+    const COLLECT_BILLING = 'MDSTRIPE_COLLECT_BILLING';
+    const COLLECT_SHIPPING = 'MDSTRIPE_COLLECT_SHIPPING';
     const BITCOIN = 'MDSTRIPE_BITCOIN';
     const ALIPAY = 'MDSTRIPE_ALIPAY';
 
@@ -108,7 +110,7 @@ class MDStripe extends PaymentModule
     {
         $this->name = 'mdstripe';
         $this->tab = 'payments_gateways';
-        $this->version = '1.0.4';
+        $this->version = '1.0.5';
         $this->author = 'Michael Dekker';
         $this->need_instance = 0;
 
@@ -350,6 +352,22 @@ class MDStripe extends PaymentModule
                         'value' => Configuration::get(self::PUBLISHABLE_KEY),
                         'validation' => 'isString',
                         'cast' => 'strval',
+                    ),
+                    self::COLLECT_BILLING => array(
+                        'title' => $this->l('Collect billing address'),
+                        'type' => 'bool',
+                        'name' => self::COLLECT_BILLING,
+                        'value' => Configuration::get(self::COLLECT_BILLING),
+                        'validation' => 'isBool',
+                        'cast' => 'intval',
+                    ),
+                    self::COLLECT_SHIPPING => array(
+                        'title' => $this->l('Collect shipping address'),
+                        'type' => 'bool',
+                        'name' => self::COLLECT_SHIPPING,
+                        'value' => Configuration::get(self::COLLECT_SHIPPING),
+                        'validation' => 'isBool',
+                        'cast' => 'intval',
                     ),
                     self::ZIPCODE => array(
                         'title' => $this->l('Zipcode / postcode verification'),
@@ -691,6 +709,8 @@ class MDStripe extends PaymentModule
         $bitcoin = (bool) Tools::getValue(self::BITCOIN);
         $alipay = (bool) Tools::getValue(self::ALIPAY);
         $showPaymentLogos = (bool) Tools::getValue(self::SHOW_PAYMENT_LOGOS);
+        $collectBilling = (bool) Tools::getValue(self::COLLECT_BILLING);
+        $collectShipping = (bool) Tools::getValue(self::COLLECT_SHIPPING);
 
         if (Configuration::get('PS_MULTISHOP_FEATURE_ACTIVE')) {
             if (Shop::getContext() == Shop::CONTEXT_ALL) {
@@ -700,6 +720,8 @@ class MDStripe extends PaymentModule
                 $this->updateAllValue(self::BITCOIN, $bitcoin);
                 $this->updateAllValue(self::ALIPAY, $alipay);
                 $this->updateAllValue(self::SHOW_PAYMENT_LOGOS, $showPaymentLogos);
+                $this->updateAllValue(self::COLLECT_BILLING, $collectBilling);
+                $this->updateAllValue(self::COLLECT_SHIPPING, $collectShipping);
             } elseif (is_array(Tools::getValue('multishopOverrideOption'))) {
                 $idShopGroup = (int) Shop::getGroupFromShop($this->getShopId(), true);
                 $multishopOverride = Tools::getValue('multishopOverrideOption');
@@ -723,6 +745,12 @@ class MDStripe extends PaymentModule
                         if ($multishopOverride[self::SHOW_PAYMENT_LOGOS]) {
                             Configuration::updateValue(self::SHOW_PAYMENT_LOGOS, $showPaymentLogos, false, $idShopGroup, $idShop);
                         }
+                        if ($multishopOverride[self::COLLECT_BILLING]) {
+                            Configuration::updateValue(self::COLLECT_BILLING, $collectBilling, false, $idShopGroup, $idShop);
+                        }
+                        if ($multishopOverride[self::COLLECT_SHIPPING]) {
+                            Configuration::updateValue(self::COLLECT_SHIPPING, $collectShipping, false, $idShopGroup, $idShop);
+                        }
                     }
                 } else {
                     $idShop = (int) $this->getShopId();
@@ -744,6 +772,12 @@ class MDStripe extends PaymentModule
                     if ($multishopOverride[self::SHOW_PAYMENT_LOGOS]) {
                         Configuration::updateValue(self::SHOW_PAYMENT_LOGOS, $showPaymentLogos, false, $idShopGroup, $idShop);
                     }
+                    if ($multishopOverride[self::COLLECT_BILLING]) {
+                        Configuration::updateValue(self::COLLECT_BILLING, $collectBilling, false, $idShopGroup, $idShop);
+                    }
+                    if ($multishopOverride[self::COLLECT_SHIPPINGL]) {
+                        Configuration::updateValue(self::COLLECT_SHIPPING, $collectShipping, false, $idShopGroup, $idShop);
+                    }
                 }
             }
         } else {
@@ -753,6 +787,8 @@ class MDStripe extends PaymentModule
             Configuration::updateValue(self::BITCOIN, $bitcoin);
             Configuration::updateValue(self::ALIPAY, $alipay);
             Configuration::updateValue(self::SHOW_PAYMENT_LOGOS, $showPaymentLogos);
+            Configuration::updateValue(self::COLLECT_BILLING, $collectBilling);
+            Configuration::updateValue(self::COLLECT_SHIPPING, $collectShipping);
         }
     }
 
@@ -966,6 +1002,8 @@ class MDStripe extends PaymentModule
             'stripe_confirmation_page' => $link->getModuleLink($this->name, 'validation', array(), Tools::usingSecureMode()),
             'showPaymentLogos' => Configuration::get(self::SHOW_PAYMENT_LOGOS),
             'stripeShopThumb' => $this->context->link->getMediaLink('/modules/mdstripe/views/img/shop'.$this->getShopId().'.jpg'),
+            'stripe_collect_billing' => Configuration::get(self::COLLECT_BILLING),
+            'stripe_collect_shipping' => Configuration::get(self::COLLECT_SHIPPING),
         ));
 
         if (Module::isEnabled('onepagecheckoutps')) {
@@ -1047,6 +1085,8 @@ class MDStripe extends PaymentModule
             'stripe_shopname' => $this->context->shop->name,
             'stripe_confirmation_page' => $link->getModuleLink($this->name, 'validation', array(), Tools::usingSecureMode()),
             'stripeShopThumb' => $this->context->link->getMediaLink('/modules/mdstripe/views/img/shop'.$this->getShopId().'.jpg'),
+            'stripe_collect_billing' => Configuration::get(self::COLLECT_BILLING),
+            'stripe_collect_shipping' => Configuration::get(self::COLLECT_SHIPPING),
         ));
 
         $externalOption = new PrestaShop\PrestaShop\Core\Payment\PaymentOption();

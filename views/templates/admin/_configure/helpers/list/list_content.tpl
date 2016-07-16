@@ -55,7 +55,7 @@
 			{/if}
 		{/if}
 					{elseif isset($params.type) && $params.type == 'price'}
-						{if isset($tr.id_currency)}
+						{if isset($params.id_currency)}
 							{displayPrice price=$tr.$key currency=$params.id_currency}
 						{else}
 							{displayPrice price=$tr.$key}
