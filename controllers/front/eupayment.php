@@ -19,8 +19,14 @@
 
 require_once dirname(__FILE__).'/../../vendor/autoload.php';
 
+/**
+ * Class MdstripeEupaymentModuleFrontController
+ */
 class MdstripeEupaymentModuleFrontController extends ModuleFrontController
 {
+    /**
+     * @throws PrestaShopException
+     */
     public function initContent()
     {
         if (!Module::isEnabled('mdstripe')) {
