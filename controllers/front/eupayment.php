@@ -61,8 +61,8 @@ class MdstripeEupaymentModuleFrontController extends ModuleFrontController
             'stripe_bitcoin' => (bool) Configuration::get(MDStripe::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
             'stripe_alipay' => (bool) Configuration::get(MDStripe::ALIPAY),
             'stripe_shopname' => $this->context->shop->name,
-            'stripe_collect_billing' => Configuration::get(self::COLLECT_BILLING),
-            'stripe_collect_shipping' => Configuration::get(self::COLLECT_SHIPPING),
+            'stripe_collect_billing' => Configuration::get(MDStripe::COLLECT_BILLING),
+            'stripe_collect_shipping' => Configuration::get(MDStripe::COLLECT_SHIPPING),
         ));
 
         $this->setTemplate('eupayment.tpl');
