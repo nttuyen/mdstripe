@@ -1,6 +1,6 @@
 {
     "require": {
-        "stripe/stripe-php": "^3.14",
+        "stripe/stripe-php": "^3.19",
         "knplabs/github-api": "^1.7"
     }
 }
