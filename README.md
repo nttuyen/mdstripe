@@ -42,7 +42,8 @@ The wiki is coming soon
 This module has been tested with these versions:  
 - `1.6.1.5`
 
-## Requirements
+## Minimum requirements
+- PHP 5.4
 - TLSv1.2 enabled cURL extension for PHP
 
 ## License
