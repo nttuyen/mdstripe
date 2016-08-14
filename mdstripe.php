@@ -1751,11 +1751,11 @@ class MDStripe extends PaymentModule
         $tmpFolder = _PS_MODULE_DIR_.'selfupdate'.md5(time());
         if (@!file_exists($file)) {
             $this->addError($this->l('Module archive could not be downloaded'));
-            
+
             return false;
         }
         $success = false;
-        if (substr($file, -4) == '.zip') {
+        if (Tools::substr($file, -4) == '.zip') {
             if (Tools::ZipExtract($file, $tmpFolder) && file_exists($tmpFolder.DIRECTORY_SEPARATOR.$this->name)) {
                 if (@rename(_PS_MODULE_DIR_.$this->name, _PS_MODULE_DIR_.$this->name.'backup') && @rename($tmpFolder.DIRECTORY_SEPARATOR.$this->name, _PS_MODULE_DIR_.$this->name)) {
                     $this->recursiveDeleteOnDisk(_PS_MODULE_DIR_.$this->name.'backup');

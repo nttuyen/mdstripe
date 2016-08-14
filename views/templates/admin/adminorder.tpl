@@ -1,8 +1,20 @@
-{capture name='stripe_yes'}{l s='Yes' mod='mdstripe'}{/capture}
-{capture name='stripe_no'}{l s='No' mod='mdstripe'}{/capture}
-{capture name='stripe_sure'}{l s='Are you sure?' mod='mdstripe'}{/capture}
-{capture name='stripe_go_refund'}{l s='Do you want to refund this order?' mod='mdstripe'}{/capture}
-
+{*
+ * 2016 Michael Dekker
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Academic Free License (AFL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/afl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@michaeldekker.com so we can send you a copy immediately.
+ *
+ *  @author    Michael Dekker <prestashop@michaeldekker.com>
+ *  @copyright 2016 Michael Dekker
+ *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+*}
 <script type="text/javascript">
 	var stripe_total_amount = '{$stripe_total_amount|escape:'javascript':'UTF-8'}';
 
@@ -18,13 +30,13 @@
 
 		function stripeConfirmation() {
 			swal({
-				title: '{$smarty.capture.stripe_sure|escape:'javascript':'UTF-8'}',
-				text: '{$smarty.capture.stripe_go_refund|escape:'javascript':'UTF-8'}',
+				title: '{l s='Are you sure?' mod='mdstripe' js=1}',
+				text: '{l s='Do you want to refund this order?' mod='mdstripe' js=1}',
 				type: 'warning',
 				showCancelButton: true,
 				confirmButtonColor: '#DD6B55',
-				confirmButtonText: '{$smarty.capture.stripe_yes|escape:'javascript':'UTF-8'}',
-				cancelButtonText: '{$smarty.capture.stripe_no|escape:'javascript':'UTF-8'}',
+				confirmButtonText: '{l s='Yes' mod='mdstripe' js=1}',
+				cancelButtonText: '{l s='No' mod='mdstripe' js=1}',
 				closeOnConfirm: false
 			}, function () {
 				$form = $('#stripe_refund');
