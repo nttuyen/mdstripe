@@ -110,7 +110,7 @@ class MDStripe extends PaymentModule
     {
         $this->name = 'mdstripe';
         $this->tab = 'payments_gateways';
-        $this->version = '1.0.7';
+        $this->version = '1.0.8';
         $this->author = 'Michael Dekker';
         $this->need_instance = 0;
 
@@ -775,7 +775,7 @@ class MDStripe extends PaymentModule
                     if ($multishopOverride[self::COLLECT_BILLING]) {
                         Configuration::updateValue(self::COLLECT_BILLING, $collectBilling, false, $idShopGroup, $idShop);
                     }
-                    if ($multishopOverride[self::COLLECT_SHIPPINGL]) {
+                    if ($multishopOverride[self::COLLECT_SHIPPING]) {
                         Configuration::updateValue(self::COLLECT_SHIPPING, $collectShipping, false, $idShopGroup, $idShop);
                     }
                 }
@@ -1370,7 +1370,7 @@ class MDStripe extends PaymentModule
                 Translate::getAdminTranslation('No', 'AdminPerformance').
                 '"'.$this->l('.').'<br />';
         }
-        
+
         return $output;
     }
 
