@@ -42,6 +42,8 @@ The wiki can be found here: https://github.com/firstred/mdstripe/wiki
 This module has been tested with these versions:  
 - `1.6.1.0`, `1.6.1.1`, `1.6.1.2`, `1.6.1.3`, `1.6.1.4`, `1.6.1.5`, `1.6.1.6`
 
+The module is **NOT** compatible with Cloud
+
 ## Minimum requirements
 - PrestaShop `1.6.1.0`
 - PHP `5.4`
