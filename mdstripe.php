@@ -727,55 +727,55 @@ class MDStripe extends PaymentModule
                 $multishopOverride = Tools::getValue('multishopOverrideOption');
                 if (Shop::getContext() == Shop::CONTEXT_GROUP) {
                     foreach (Shop::getShops(false, $this->getShopId()) as $idShop) {
-                        if ($multishopOverride[self::SECRET_KEY]) {
+                        if (isset($multishopOverride[self::SECRET_KEY]) && $multishopOverride[self::SECRET_KEY]) {
                             Configuration::updateValue(self::SECRET_KEY, $secretKey, false, $idShopGroup, $idShop);
                         }
-                        if ($multishopOverride[self::PUBLISHABLE_KEY]) {
+                        if (isset($multishopOverride[self::PUBLISHABLE_KEY]) && $multishopOverride[self::PUBLISHABLE_KEY]) {
                             Configuration::updateValue(self::PUBLISHABLE_KEY, $publishableKey, false, $idShopGroup, $idShop);
                         }
-                        if ($multishopOverride[self::ZIPCODE]) {
+                        if (isset($multishopOverride[self::ZIPCODE]) && $multishopOverride[self::ZIPCODE]) {
                             Configuration::updateValue(self::ZIPCODE, $zipcode, false, $idShopGroup, $idShop);
                         }
-                        if ($multishopOverride[self::BITCOIN]) {
+                        if (isset($multishopOverride[self::BITCOIN]) && $multishopOverride[self::BITCOIN]) {
                             Configuration::updateValue(self::BITCOIN, $bitcoin, false, $idShopGroup, $idShop);
                         }
-                        if ($multishopOverride[self::ALIPAY]) {
+                        if (isset($multishopOverride[self::ALIPAY]) && $multishopOverride[self::ALIPAY]) {
                             Configuration::updateValue(self::ALIPAY, $alipay, false, $idShopGroup, $idShop);
                         }
-                        if ($multishopOverride[self::SHOW_PAYMENT_LOGOS]) {
+                        if (isset($multishopOverride[self::SHOW_PAYMENT_LOGOS]) && $multishopOverride[self::SHOW_PAYMENT_LOGOS]) {
                             Configuration::updateValue(self::SHOW_PAYMENT_LOGOS, $showPaymentLogos, false, $idShopGroup, $idShop);
                         }
-                        if ($multishopOverride[self::COLLECT_BILLING]) {
+                        if (isset($multishopOverride[self::COLLECT_BILLING]) && $multishopOverride[self::COLLECT_BILLING]) {
                             Configuration::updateValue(self::COLLECT_BILLING, $collectBilling, false, $idShopGroup, $idShop);
                         }
-                        if ($multishopOverride[self::COLLECT_SHIPPING]) {
+                        if (isset($multishopOverride[self::COLLECT_SHIPPING]) && $multishopOverride[self::COLLECT_SHIPPING]) {
                             Configuration::updateValue(self::COLLECT_SHIPPING, $collectShipping, false, $idShopGroup, $idShop);
                         }
                     }
                 } else {
                     $idShop = (int) $this->getShopId();
-                    if ($multishopOverride[self::SECRET_KEY]) {
+                    if (isset($multishopOverride[self::SECRET_KEY]) && $multishopOverride[self::SECRET_KEY]) {
                         Configuration::updateValue(self::SECRET_KEY, $secretKey, false, $idShopGroup, $idShop);
                     }
-                    if ($multishopOverride[self::PUBLISHABLE_KEY]) {
+                    if (isset($multishopOverride[self::PUBLISHABLE_KEY]) && $multishopOverride[self::PUBLISHABLE_KEY]) {
                         Configuration::updateValue(self::PUBLISHABLE_KEY, $publishableKey, false, $idShopGroup, $idShop);
                     }
-                    if ($multishopOverride[self::ZIPCODE]) {
+                    if (isset($multishopOverride[self::ZIPCODE]) && $multishopOverride[self::ZIPCODE]) {
                         Configuration::updateValue(self::ZIPCODE, $zipcode, false, $idShopGroup, $idShop);
                     }
-                    if ($multishopOverride[self::BITCOIN]) {
+                    if (isset($multishopOverride[self::BITCOIN]) && $multishopOverride[self::BITCOIN]) {
                         Configuration::updateValue(self::BITCOIN, $bitcoin, false, $idShopGroup, $idShop);
                     }
-                    if ($multishopOverride[self::ALIPAY]) {
+                    if (isset($multishopOverride[self::ALIPAY]) && $multishopOverride[self::ALIPAY]) {
                         Configuration::updateValue(self::ALIPAY, $alipay, false, $idShopGroup, $idShop);
                     }
-                    if ($multishopOverride[self::SHOW_PAYMENT_LOGOS]) {
+                    if (isset($multishopOverride[self::SHOW_PAYMENT_LOGOS]) && $multishopOverride[self::SHOW_PAYMENT_LOGOS]) {
                         Configuration::updateValue(self::SHOW_PAYMENT_LOGOS, $showPaymentLogos, false, $idShopGroup, $idShop);
                     }
-                    if ($multishopOverride[self::COLLECT_BILLING]) {
+                    if (isset($multishopOverride[self::COLLECT_BILLING]) && $multishopOverride[self::COLLECT_BILLING]) {
                         Configuration::updateValue(self::COLLECT_BILLING, $collectBilling, false, $idShopGroup, $idShop);
                     }
-                    if ($multishopOverride[self::COLLECT_SHIPPING]) {
+                    if (isset($multishopOverride[self::COLLECT_SHIPPING]) && $multishopOverride[self::COLLECT_SHIPPING]) {
                         Configuration::updateValue(self::COLLECT_SHIPPING, $collectShipping, false, $idShopGroup, $idShop);
                     }
                 }
@@ -817,43 +817,43 @@ class MDStripe extends PaymentModule
                 $multishopOverride = Tools::getValue('multishopOverrideOption');
                 if (Shop::getContext() == Shop::CONTEXT_GROUP) {
                     foreach (Shop::getShops(false, $this->getShopId()) as $idShop) {
-                        if ($multishopOverride[self::STATUS_VALIDATED]) {
+                        if (isset($multishopOverride[self::STATUS_VALIDATED]) && $multishopOverride[self::STATUS_VALIDATED]) {
                             Configuration::updateValue(self::STATUS_VALIDATED, $statusValidated, false, $idShopGroup, $idShop);
                         }
-                        if ($multishopOverride[self::USE_STATUS_REFUND]) {
+                        if (isset($multishopOverride[self::USE_STATUS_REFUND]) && $multishopOverride[self::USE_STATUS_REFUND]) {
                             Configuration::updateValue(self::USE_STATUS_REFUND, $useStatusRefund, false, $idShopGroup, $idShop);
                         }
-                        if ($multishopOverride[self::STATUS_REFUND]) {
+                        if (isset($multishopOverride[self::STATUS_REFUND]) && $multishopOverride[self::STATUS_REFUND]) {
                             Configuration::updateValue(self::STATUS_REFUND, $statusRefund, false, $idShopGroup, $idShop);
                         }
-                        if ($multishopOverride[self::USE_STATUS_PARTIAL_REFUND]) {
+                        if (isset($multishopOverride[self::USE_STATUS_PARTIAL_REFUND]) && $multishopOverride[self::USE_STATUS_PARTIAL_REFUND]) {
                             Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $useStatusPartialRefund, false, $idShopGroup, $idShop);
                         }
-                        if ($multishopOverride[self::STATUS_PARTIAL_REFUND]) {
+                        if (isset($multishopOverride[self::STATUS_PARTIAL_REFUND]) && $multishopOverride[self::STATUS_PARTIAL_REFUND]) {
                             Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $statusPartialRefund, false, $idShopGroup, $idShop);
                         }
-                        if ($multishopOverride[self::GENERATE_CREDIT_SLIP]) {
+                        if (isset($multishopOverride[self::GENERATE_CREDIT_SLIP]) && $multishopOverride[self::GENERATE_CREDIT_SLIP]) {
                             Configuration::updateValue(self::GENERATE_CREDIT_SLIP, $generateCreditSlip, false, $idShopGroup, $idShop);
                         }
                     }
                 } else {
                     $idShop = (int) $this->getShopId();
-                    if ($multishopOverride[self::STATUS_VALIDATED]) {
+                    if (isset($multishopOverride[self::STATUS_VALIDATED]) && $multishopOverride[self::STATUS_VALIDATED]) {
                         Configuration::updateValue(self::STATUS_VALIDATED, $statusValidated, false, $idShopGroup, $idShop);
                     }
-                    if ($multishopOverride[self::USE_STATUS_REFUND]) {
+                    if (isset($multishopOverride[self::USE_STATUS_REFUND]) && $multishopOverride[self::USE_STATUS_REFUND]) {
                         Configuration::updateValue(self::USE_STATUS_REFUND, $useStatusRefund, false, $idShopGroup, $idShop);
                     }
-                    if ($multishopOverride[self::STATUS_REFUND]) {
+                    if (isset($multishopOverride[self::STATUS_REFUND]) && $multishopOverride[self::STATUS_REFUND]) {
                         Configuration::updateValue(self::STATUS_REFUND, $statusRefund, false, $idShopGroup, $idShop);
                     }
-                    if ($multishopOverride[self::USE_STATUS_PARTIAL_REFUND]) {
+                    if (isset($multishopOverride[self::USE_STATUS_PARTIAL_REFUND]) && $multishopOverride[self::USE_STATUS_PARTIAL_REFUND]) {
                         Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $useStatusPartialRefund, false, $idShopGroup, $idShop);
                     }
-                    if ($multishopOverride[self::STATUS_PARTIAL_REFUND]) {
+                    if (isset($multishopOverride[self::STATUS_PARTIAL_REFUND]) && $multishopOverride[self::STATUS_PARTIAL_REFUND]) {
                         Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $statusPartialRefund, false, $idShopGroup, $idShop);
                     }
-                    if ($multishopOverride[self::GENERATE_CREDIT_SLIP]) {
+                    if (isset($multishopOverride[self::GENERATE_CREDIT_SLIP]) && $multishopOverride[self::GENERATE_CREDIT_SLIP]) {
                         Configuration::updateValue(self::GENERATE_CREDIT_SLIP, $generateCreditSlip, false, $idShopGroup, $idShop);
                     }
                 }
