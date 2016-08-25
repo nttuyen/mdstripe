@@ -1,13 +1,20 @@
 <?php
 /**
- * Copyright (C) Mijn Presta - All Rights Reserved
+ * 2016 Michael Dekker
  *
- * Unauthorized copying of this file, via any medium is strictly prohibited
+ * NOTICE OF LICENSE
  *
- * @author    Michael Dekker <prestashopaddons@mijnpresta.nl>
- * @copyright 2015-2016 Mijn Presta
- * @license   proprietary
- * Intellectual Property of Mijn Presta
+ * This source file is subject to the Academic Free License (AFL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/afl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@michaeldekker.com so we can send you a copy immediately.
+ *
+ *  @author    Michael Dekker <prestashop@michaeldekker.com>
+ *  @copyright 2016 Michael Dekker
+ *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
 spl_autoload_register(
