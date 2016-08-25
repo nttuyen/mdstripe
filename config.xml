@@ -2,7 +2,7 @@
 <module>
 	<name>mdstripe</name>
 	<displayName><![CDATA[Stripe]]></displayName>
-	<version><![CDATA[1.0.8]]></version>
+	<version><![CDATA[1.0.9]]></version>
 	<description><![CDATA[Accept payments with Stripe]]></description>
 	<author><![CDATA[Michael Dekker]]></author>
 	<tab><![CDATA[payments_gateways]]></tab>
