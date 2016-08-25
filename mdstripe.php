@@ -112,26 +112,31 @@ class MDStripe extends PaymentModule
         $this->tab = 'payments_gateways';
         $this->version = '1.0.8';
         $this->author = 'Michael Dekker';
-        $this->need_instance = 0;
+        $this->need_instance = 1;
 
         $this->bootstrap = true;
 
         $this->controllers = array('hook', 'validation');
+
+        $this->is_eu_compatible = 1;
+        $this->currencies = true;
+        $this->currencies_mode = 'checkbox';
 
         parent::__construct();
 
         $this->displayName = $this->l('Stripe');
         $this->description = $this->l('Accept payments with Stripe');
 
-        $this->is_eu_compatible = 1;
-        $this->currencies = true;
-        $this->currencies_mode = 'checkbox';
-
-
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
 
         // Only check from Back Office
         if (Context::getContext()->cookie->id_employee) {
+            if ($this->active && extension_loaded('curl') == false) {
+                $this->context->controller->errors[] = $this->displayName.': '.$this->l('You have to enable the cURL extension on your server in order to use this module');
+                $this->disable();
+
+                return;
+            }
             $this->lastCheck = Configuration::get(self::LAST_CHECK);
             $this->checkUpdate();
         }
@@ -971,6 +976,12 @@ class MDStripe extends PaymentModule
         } else {
             $cookie = $params['cookie'];
         }
+
+        $idCurrency = $params['cart']->id_currency;
+        $currency = new Currency((int) $idCurrency);
+
+        if (in_array($currency->iso_code, $this->limited_currencies) == false)
+            return false;
 
         $this->checkShopThumb();
 
