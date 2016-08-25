@@ -81,7 +81,7 @@ class StripeTransaction extends ObjectModel
     {
         $sql = new DbQuery();
         $sql->select('c.`id_customer`');
-        $sql->from('stripe_transaction', 'st');
+        $sql->from(bqSQL(self::$definition['table']), 'st');
         $sql->innerJoin('orders', 'o', 'st.`id_order` = o.`id_order`');
         $sql->innerJoin('customer', 'c', 'o.`id_customer` = c.`id_customer`');
         $sql->where('st.`id_charge` = \''.pSQL($idCharge).'\'');
@@ -100,7 +100,7 @@ class StripeTransaction extends ObjectModel
     {
         $sql = new DbQuery();
         $sql->select('c.`id_cart`');
-        $sql->from('stripe_transaction', 'st');
+        $sql->from(bqSQL(self::$definition['table']), 'st');
         $sql->innerJoin('orders', 'o', 'st.`id_order` = o.`id_order`');
         $sql->innerJoin('cart', 'c', 'o.`id_cart` = c.`id_cart`');
         $sql->where('st.`id_charge` = \''.pSQL($idCharge).'\'');
@@ -119,7 +119,7 @@ class StripeTransaction extends ObjectModel
     {
         $sql = new DbQuery();
         $sql->select('st.`id_order`');
-        $sql->from('stripe_transaction', 'st');
+        $sql->from(bqSQL(self::$definition['table']), 'st');
         $sql->where('st.`id_charge` = \''.pSQL($idCharge).'\'');
 
         return (int) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
@@ -138,7 +138,7 @@ class StripeTransaction extends ObjectModel
 
         $sql = new DbQuery();
         $sql->select('st.`amount`');
-        $sql->from('stripe_transaction', 'st');
+        $sql->from(bqSQL(self::$definition['table']), 'st');
         $sql->where('st.`id_charge` = \''.pSQL($idCharge).'\'');
         $sql->where('st.`type` = '.self::TYPE_PARTIAL_REFUND.' OR st.`type` = '.self::TYPE_FULL_REFUND);
 
@@ -172,7 +172,7 @@ class StripeTransaction extends ObjectModel
         } else {
             $sql->select('*');
         }
-        $sql->from('stripe_transaction', 'st');
+        $sql->from(bqSQL(self::$definition['table']), 'st');
         $sql->where('st.`id_order` = '.(int) $idOrder);
 
         if ($count) {
@@ -195,7 +195,7 @@ class StripeTransaction extends ObjectModel
 
         $sql = new DbQuery();
         $sql->select('st.`amount`');
-        $sql->from('stripe_transaction', 'st');
+        $sql->from(bqSQL(self::$definition['table']), 'st');
         $sql->where('st.`id_order` = \''.pSQL($idOrder).'\'');
         $sql->where('st.`type` = '.self::TYPE_PARTIAL_REFUND.' OR st.`type` = '.self::TYPE_FULL_REFUND);
 
@@ -223,7 +223,7 @@ class StripeTransaction extends ObjectModel
     {
         $sql = new DbQuery();
         $sql->select('DISTINCT st.`id_charge`');
-        $sql->from('stripe_transaction', 'st');
+        $sql->from(bqSQL(self::$definition['table']), 'st');
         $sql->where('st.`id_order` = '.(int) $idOrder);
 
         return Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
@@ -240,7 +240,7 @@ class StripeTransaction extends ObjectModel
     {
         $sql = new DbQuery();
         $sql->select('DISTINCT st.`card_last_digits`');
-        $sql->from('stripe_transaction', 'st');
+        $sql->from(bqSQL(self::$definition['table']), 'st');
         $sql->where('st.`id_charge` = \''.pSQL($idCharge).'\'');
 
         return Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
