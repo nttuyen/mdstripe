@@ -52,20 +52,20 @@
 	</div>
 	{$stripe_transaction_list}
 	<br />
-	<div class="row-margin-bottom row-margin-top order_action clearfix">
-		<div class="col-md-1 col-sm-3 col-xs-4">
+	<div class="row-margin-bottom row-margin-top order_action row clearfix">
+		<div class="fixed-width-xl pull-left">
 			<button id="stripe_full_refund_button" type="button" class="btn btn-default"><i class="icon icon-undo"></i> {l s='Full refund' mod='mdstripe'}</button>
 		</div>
 		<form id="stripe_refund" action="{$stripe_module_refund_action|escape:'htmlall':'UTF-8'}&id_order={$id_order|escape:'htmlall':'UTF-8'}" method="post">
-			<input type="hidden" id="stripe_refund_order" name="stripe_refund_order" value="{$id_order|escape:'htmlall':'UTF-8'}">
-			<div class="input-group col-md-2 col-sm-9 col-xs-8">
-				<span class="input-group-addon">
+			<div class="input-group pull-left" style="width: 400px;">
+				<input type="hidden" id="stripe_refund_order" name="stripe_refund_order" value="{$id_order|escape:'htmlall':'UTF-8'}">
+				<div class="input-group-addon">
 					{$stripe_currency_symbol}
-				</span>
+				</div>
 				<input type="text" id="stripe_refund_amount" name="stripe_refund_amount" class="form-control" placeholder="{l s='Remaining: ' mod='mdstripe'} {$stripe_total_amount|escape:'htmlall':'UTF-8'}">
-				<span class="input-group-btn">
+				<div class="input-group-btn">
 					<button id="stripe_partial_refund_button" class="btn btn-default" type="button"><i class="icon icon-undo"></i> {l s='Partial Refund' mod='mdstripe'}</button>
-				</span>
+				</div>
 			</div>
 		</form>
 	</div>

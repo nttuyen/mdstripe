@@ -1320,7 +1320,7 @@ class MDStripe extends PaymentModule
 
         // Hide actions
         $helperList->tpl_vars['show_filters'] = false;
-        $helperList->actions = false;
+        $helperList->actions = array();
         $helperList->bulk_actions = array();
 
         $helperList->table = 'stripe_transaction';
