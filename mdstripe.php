@@ -979,12 +979,6 @@ class MDStripe extends PaymentModule
             $cookie = $params['cookie'];
         }
 
-        $idCurrency = $params['cart']->id_currency;
-        $currency = new Currency((int) $idCurrency);
-
-        if (in_array($currency->iso_code, $this->limited_currencies) == false)
-            return false;
-
         $this->checkShopThumb();
 
         $stripeEmail = $cookie->email;
@@ -1826,7 +1820,7 @@ class MDStripe extends PaymentModule
                 Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&doNotAutoUpdate=1');
             }
         }
-        
+
         return $success;
     }
 
