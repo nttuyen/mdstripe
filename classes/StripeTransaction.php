@@ -173,6 +173,8 @@ class StripeTransaction extends ObjectModel
             $sql->select('*');
         }
         $sql->from(bqSQL(self::$definition['table']), 'st');
+        $sql->innerJoin(bqSQL(Order::$definition['table']), 'o', 'o.`id_order` = st.`id_order`');
+        $sql->innerJoin(bqSQL(Currency::$definition['table']), 'c', 'c.`id_currency` = o.`id_currency`');
         $sql->where('st.`id_order` = '.(int) $idOrder);
 
         if ($count) {

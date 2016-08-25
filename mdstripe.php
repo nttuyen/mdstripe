@@ -149,6 +149,7 @@ class MDStripe extends PaymentModule
      */
     public function install()
     {
+        $this->makeModuleTrusted();
         if (extension_loaded('curl') == false) {
             $this->errors[] = $this->l('You have to enable the cURL extension on your server to install this module');
 
@@ -616,7 +617,7 @@ class MDStripe extends PaymentModule
 
         $sql = new DbQuery();
         $sql->select('*');
-        $sql->from('stripe_transaction', 'st');
+        $sql->from(bqSQL(StripeTransaction::$definition['table']), 'st');
         $sql->orderBy('`'.bqSQL($helperList->orderBy).'` '.pSQL($helperList->orderWay));
         $sql->where('1 '.$filterSql);
         $sql->limit($pagination, $currentPage - 1);
@@ -629,7 +630,7 @@ class MDStripe extends PaymentModule
             if (!in_array(Tools::strtolower($currency->iso_code), MDStripe::$zeroDecimalCurrencies)) {
                 $result['amount'] = (float) ($result['amount'] / 100);
             }
-            $result['id_currency'] = $currency->id;
+            $result['amount'] = Tools::displayPrice($result['amount'], $currency);
             switch ($result['type']) {
                 case StripeTransaction::TYPE_CHARGE:
                     $result['color'] = '#32CD32';
@@ -1242,12 +1243,13 @@ class MDStripe extends PaymentModule
         $results = StripeTransaction::getTransactionsByOrderId($idOrder);
 
         $order = new Order($idOrder);
-        $currency = new Currency($order->id_currency);
+        $currency = Currency::getCurrencyInstance($order->id_currency);
 
         if (!in_array(Tools::strtolower($currency->iso_code), MDStripe::$zeroDecimalCurrencies)) {
             foreach ($results as &$result) {
                 // Process results
                 $result['amount'] = (float) ($result['amount'] / 100);
+                $result['amount'] = Tools::displayPrice($result['amount'], $currency);
                 switch ($result['type']) {
                     case StripeTransaction::TYPE_CHARGE:
                         $result['color'] = '#32CD32';
@@ -1624,9 +1626,9 @@ class MDStripe extends PaymentModule
     {
         $order = new Order($idOrder);
         if (Validate::isLoadedObject($order)) {
-            $currency = new Currency($order->id_currency);
+            $currency = Currency::getCurrencyInstance($order->id_currency);
         } else {
-            $currency = new Currency((int) Configuration::get('PS_CURRENCY_DEFAULT'));
+            $currency = Currency::getCurrencyInstance((int) Configuration::get('PS_CURRENCY_DEFAULT'));
         }
 
         return $currency;
@@ -1882,7 +1884,7 @@ class MDStripe extends PaymentModule
         // Add to active payments list
         $modulesTabXml = simplexml_load_file(_PS_ROOT_DIR_.Module::CACHE_FILE_TAB_MODULES_LIST);
 
-        $moduleFound = $modulesTabXml->xpath('//tab[@class_name="AdminPayment"]/module[@name="mdstripe"]');
+        $moduleFound = $modulesTabXml->xpath('//tab[@class_name="AdminPayment"]/module[@name="'.$this->name.'"]');
         if (!empty($moduleFound)) {
             return;
         }
