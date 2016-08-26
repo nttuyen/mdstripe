@@ -977,11 +977,35 @@ class MDStripe extends PaymentModule
      */
     public function hookPayment($params)
     {
+        /** @var Cart $cart */
+        $cart = $params['cart'];
         if (!$this->active) {
             return false;
         }
-        if (!$this->checkCurrency($params['cart'])) {
+        if (!$this->checkCurrency($cart)) {
             return false;
+        }
+        if (!$this->checkCountry((int) Context::getContext()->country->id)) {
+            return false;
+        }
+        if (Group::isFeatureActive()) {
+            $customer = new Customer((int) $cart->id_customer);
+            if (Validate::isLoadedObject($customer) && $customer->isLogged()) {
+                $groups = $customer->getGroups();
+            } elseif (Validate::isLoadedObject($customer) && $customer->isLogged(true)) {
+                $groups = array((int) Configuration::get('PS_GUEST_GROUP'));
+            } else {
+                $groups = array((int) Configuration::get('PS_UNIDENTIFIED_GROUP'));
+            }
+            if (!$this->checkGroup($groups)) {
+                return false;
+            }
+        }
+        $carrier = new Carrier((int) $cart->id_carrier);
+        if (Validate::isLoadedObject($carrier)) {
+            if (!$this->checkCarrier($params['cart'])) {
+                return false;
+            }
         }
 
         /** @var Cookie $cookie */
@@ -1033,7 +1057,7 @@ class MDStripe extends PaymentModule
     }
 
     /**
-     * Hook to Advcanced EU checkout
+     * Hook to Advanced EU checkout
      *
      * @param array $params Hook parameters
      *
@@ -1041,11 +1065,35 @@ class MDStripe extends PaymentModule
      */
     public function hookDisplayPaymentEU($params)
     {
+        /** @var Cart $cart */
+        $cart = $params['cart'];
         if (!$this->active) {
             return false;
         }
-        if (!$this->checkCurrency($params['cart'])) {
+        if (!$this->checkCurrency($cart)) {
             return false;
+        }
+        if (!$this->checkCountry((int) Context::getContext()->country->id)) {
+            return false;
+        }
+        if (Group::isFeatureActive()) {
+            $customer = new Customer((int) $cart->id_customer);
+            if (Validate::isLoadedObject($customer) && $customer->isLogged()) {
+                $groups = $customer->getGroups();
+            } elseif (Validate::isLoadedObject($customer) && $customer->isLogged(true)) {
+                $groups = array((int) Configuration::get('PS_GUEST_GROUP'));
+            } else {
+                $groups = array((int) Configuration::get('PS_UNIDENTIFIED_GROUP'));
+            }
+            if (!$this->checkGroup($groups)) {
+                return false;
+            }
+        }
+        $carrier = new Carrier((int) $cart->id_carrier);
+        if (Validate::isLoadedObject($carrier)) {
+            if (!$this->checkCarrier($params['cart'])) {
+                return false;
+            }
         }
 
         $this->checkShopThumb();
@@ -1073,8 +1121,35 @@ class MDStripe extends PaymentModule
         if (version_compare(_PS_VERSION_, '1.7.0.0', '<')) {
             return false;
         }
+        /** @var Cart $cart */
+        $cart = $params['cart'];
         if (!$this->active) {
-            return array();
+            return false;
+        }
+        if (!$this->checkCurrency($cart)) {
+            return false;
+        }
+        if (!$this->checkCountry((int) Context::getContext()->country->id)) {
+            return false;
+        }
+        if (Group::isFeatureActive()) {
+            $customer = new Customer((int) $cart->id_customer);
+            if (Validate::isLoadedObject($customer) && $customer->isLogged()) {
+                $groups = $customer->getGroups();
+            } elseif (Validate::isLoadedObject($customer) && $customer->isLogged(true)) {
+                $groups = array((int) Configuration::get('PS_GUEST_GROUP'));
+            } else {
+                $groups = array((int) Configuration::get('PS_UNIDENTIFIED_GROUP'));
+            }
+            if (!$this->checkGroup($groups)) {
+                return false;
+            }
+        }
+        $carrier = new Carrier((int) $cart->id_carrier);
+        if (Validate::isLoadedObject($carrier)) {
+            if (!$this->checkCarrier($params['cart'])) {
+                return false;
+            }
         }
 
         $this->checkShopThumb();
@@ -1629,7 +1704,7 @@ class MDStripe extends PaymentModule
         if (array_key_exists($filter, $fieldsList)) {
             return $fieldsList[$filter];
         }
-        
+
         return false;
     }
 
@@ -1723,7 +1798,7 @@ class MDStripe extends PaymentModule
      *
      * @return bool Whether the module should be shown
      */
-    protected function checkCurrency($cart)
+    protected function checkCurrency(Cart $cart)
     {
         $currencyOrder = new Currency($cart->id_currency);
         $currenciesModule = $this->getCurrency($cart->id_currency);
@@ -1737,6 +1812,71 @@ class MDStripe extends PaymentModule
         }
 
         return false;
+    }
+
+    /**
+     * Check customer group
+     *
+     * @param array $groups Customer Group IDs
+     *
+     * @return bool Whether the module should be shown
+     */
+    protected function checkGroup($groups)
+    {
+        foreach ($groups as &$group) {
+            $group = (int) $group;
+        }
+        $sql = new DbQuery();
+        $sql->select('mg.`id_module`');
+        $sql->from('module_group', 'mg');
+        $sql->where('mg.`id_module` = '.(int) $this->id);
+        $sql->where('mg.`id_group` IN ('.implode(',', $groups).')');
+        $sql->where('mg.`id_shop` = '.(int) $this->getShopId());
+
+        return (bool) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+    }
+
+    /**
+     * Check Country
+     *
+     * @param int $idCountry Country ID
+     *
+     * @return bool Whether the module should be shown
+     */
+    protected function checkCountry($idCountry)
+    {
+        $sql = new DbQuery();
+        $sql->select('mc.`id_module`');
+        $sql->from('module_country', 'mc');
+        $sql->where('mc.`id_module` = '.(int) $this->id);
+        $sql->where('mc.`id_country` = '.(int) $idCountry);
+        $sql->where('mc.`id_shop` = '.(int) $this->getShopId());
+
+        return (bool) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+    }
+
+    /**
+     * Check carrier
+     * For PS1.7+
+     *
+     * @param int $carrierReference Carrier Reference
+     *
+     * @return bool Whether the module should be shown
+     */
+    protected function checkCarrier($carrierReference)
+    {
+        if (version_compare(_PS_VERSION_, '1.7.0.0', '<')) {
+            return true;
+        }
+
+        $sql = new DbQuery();
+        $sql->select('mc.`id_module`');
+        $sql->from('module_carrier', 'mc');
+        $sql->where('mc.`id_module` = '.(int) $this->id);
+        $sql->where('mc.`id_reference` = '.(int) $carrierReference);
+        $sql->where('mc.`id_shop` = '.(int) $this->getShopId());
+
+        return (bool) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
     }
 
     /**
