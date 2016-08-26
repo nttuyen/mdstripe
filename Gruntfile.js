@@ -24,6 +24,7 @@ module.exports = function(grunt) {
                     {src: 'config.xml', dest: 'mdstripe/'},
                     {src: 'index.php', dest: 'mdstripe/'},
                     {src: 'mdstripe.php', dest: 'mdstripe/'},
+                    {src: 'cloudunlocker.php', dest: 'mdstripe/'},
                     {src: 'logo.png', dest: 'mdstripe/'},
                     {src: 'logo.gif', dest: 'mdstripe/'},
                     {src: 'LICENSE.md', dest: 'mdstripe/'},
