@@ -30,7 +30,16 @@ class MdstripeEupaymentModuleFrontController extends ModuleFrontController
     public function initContent()
     {
         if (!Module::isEnabled('mdstripe')) {
-            return;
+            Tools::redirect('index.php?controller=order&step=1');
+        }
+        $cart = $this->context->cart;
+        if ($cart->id_customer == 0 || $cart->id_address_delivery == 0 || $cart->id_address_invoice == 0 || !$this->module->active) {
+            Tools::redirect('index.php?controller=order&step=1');
+        }
+
+        $customer = new Customer($cart->id_customer);
+        if (!Validate::isLoadedObject($customer)) {
+            Tools::redirect('index.php?controller=order&step=1');
         }
 
         require_once _PS_MODULE_DIR_.'mdstripe/mdstripe.php';

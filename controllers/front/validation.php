@@ -36,6 +36,16 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
      */
     public function postProcess()
     {
+        $cart = $this->context->cart;
+        if ($cart->id_customer == 0 || $cart->id_address_delivery == 0 || $cart->id_address_invoice == 0 || !$this->module->active) {
+            Tools::redirect('index.php?controller=order&step=1');
+        }
+
+        $customer = new Customer($cart->id_customer);
+        if (!Validate::isLoadedObject($customer)) {
+            Tools::redirect('index.php?controller=order&step=1');
+        }
+
         $orderProcess = Configuration::get('PS_ORDER_PROCESS_TYPE') ? 'order-opc' : 'order';
         $this->context->smarty->assign(array(
             'orderLink' => $this->context->link->getPageLink($orderProcess, true),
