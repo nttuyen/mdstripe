@@ -15,17 +15,36 @@
  *  @copyright 2016 Michael Dekker
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
-<nav class="navbar navbar-default" role="navigation">
-	<ul class="nav navbar-nav">
-		{if isset($menutabs)}
-			{foreach from=$menutabs item=tab}
-				<li class="{if $tab.active}active{/if}">
-					<a id="{$tab.short|escape:'htmlall':'UTF-8'}" href="{$tab.href|escape:'htmlall':'UTF-8'}">
-						<span class="icon {$tab.icon|escape:'htmlall':'UTF-8'}"></span>
-						{$tab.desc|escape:'htmlall':'UTF-8'}
-					</a>
-				</li>
-			{/foreach}
-		{/if}
-	</ul>
-</nav>
+{if $smarty.const._PS_VERSION_|@addcslashes:'\'' < '1.6'}
+	<table class="table" cellpadding="0" cellspacing="0" style="margin:auto;text-align:center">
+		<tbody>
+			<tr>
+				{if isset($menutabs)}
+					{foreach from=$menutabs item=tab}
+						<th>
+							<a id="{$tab.short|escape:'htmlall':'UTF-8'}" href="{$tab.href|escape:'htmlall':'UTF-8'}" {if $tab.active}style="color:black"{else}style="color:grey"{/if}>
+								{$tab.desc|escape:'htmlall':'UTF-8'}
+							</a>
+						</th>
+					{/foreach}
+				{/if}
+			</tr>
+		</tbody>
+	</table>
+	<br />
+{else}
+	<nav class="navbar navbar-default" role="navigation">
+		<ul class="nav navbar-nav">
+			{if isset($menutabs)}
+				{foreach from=$menutabs item=tab}
+					<li class="{if $tab.active}active{/if}">
+						<a id="{$tab.short|escape:'htmlall':'UTF-8'}" href="{$tab.href|escape:'htmlall':'UTF-8'}">
+							<span class="icon {$tab.icon|escape:'htmlall':'UTF-8'}"></span>
+							{$tab.desc|escape:'htmlall':'UTF-8'}
+						</a>
+					</li>
+				{/foreach}
+			{/if}
+		</ul>
+	</nav>
+{/if}

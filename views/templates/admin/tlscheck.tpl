@@ -15,27 +15,56 @@
  *  @copyright 2016 Michael Dekker
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
-<div class="panel">
-	<h3><i class="icon icon-lock"></i> {l s='TLS v1.2 support' mod='mdstripe'}</h3>
-	<p>
-		<strong>{l s='Check if your server supports TLS v1.2' mod='mdstripe'}</strong><br />
-		{l s='This module cannot process payments if TLS v1.2 is not supported by your server.' mod='mdstripe'}<br />
-		{l s='With this tool you can check if you need to configure your server in order to use the module.' mod='mdstripe'}<br />
-		{l s='If the module was unable to verify that TLS v1.2 is supported, Stripe will automatically be disabled.' mod='mdstripe'}
-		{l s='Make sure you see a (green) confirmation message underneath and you will be good to go.' mod='mdstripe'}
-	</p>
-	{if $tls_ok === MDStripe::ENUM_TLS_OK}
-		<div class="alert alert-success">
-			{l s='TLS v1.2 is supported' mod='mdstripe'}
-		</div>
-	{elseif $tls_ok === MDStripe::ENUM_TLS_ERROR}
-		<div class="alert alert-danger">
-			{l s='TLS v1.2 is not supported. Please upgrade your server.' mod='mdstripe'}
-		</div>
-	{else}
-		<div class="alert alert-warning">
-			{l s='Status is unknown. Please check if TLS v1.2 is supported.' mod='mdstripe'}
-		</div>
-	{/if}
-	<a class="btn btn-default" href="{$module_url}&checktls=1">{l s='Check for TLS v1.2 support' mod='mdstripe'}</a>
-</div>
+{if $smarty.const._PS_VERSION_|@addcslashes:'\'' < '1.6'}
+	<fieldset>
+		<legend>{l s='TLS v1.2 support' mod='mdstripe'}</legend>
+		<p>
+			<strong>{l s='Check if your server supports TLS v1.2' mod='mdstripe'}</strong><br />
+			{l s='This module cannot process payments if TLS v1.2 is not supported by your server.' mod='mdstripe'}<br />
+			{l s='With this tool you can check if you need to configure your server in order to use the module.' mod='mdstripe'}<br />
+			{l s='If the module was unable to verify that TLS v1.2 is supported, Stripe will automatically be disabled.' mod='mdstripe'}
+			{l s='Make sure you see a (green) confirmation message underneath and you will be good to go.' mod='mdstripe'}
+		</p>
+		{if $tls_ok === MDStripe::ENUM_TLS_OK}
+			<div class="confirm">
+				{l s='TLS v1.2 is supported' mod='mdstripe'}
+			</div>
+		{elseif $tls_ok === MDStripe::ENUM_TLS_ERROR}
+			<div class="error">
+				{l s='TLS v1.2 is not supported. Please upgrade your server.' mod='mdstripe'}
+			</div>
+		{else}
+			<div class="warn">
+				{l s='Status is unknown. Please check if TLS v1.2 is supported.' mod='mdstripe'}
+			</div>
+		{/if}
+		<br />
+		<a class="button" href="{$module_url}&checktls=1">{l s='Check for TLS v1.2 support' mod='mdstripe'}</a>
+	</fieldset>
+	<br />
+{else}
+	<div class="panel">
+		<h3><i class="icon icon-lock"></i> {l s='TLS v1.2 support' mod='mdstripe'}</h3>
+		<p>
+			<strong>{l s='Check if your server supports TLS v1.2' mod='mdstripe'}</strong><br />
+			{l s='This module cannot process payments if TLS v1.2 is not supported by your server.' mod='mdstripe'}<br />
+			{l s='With this tool you can check if you need to configure your server in order to use the module.' mod='mdstripe'}<br />
+			{l s='If the module was unable to verify that TLS v1.2 is supported, Stripe will automatically be disabled.' mod='mdstripe'}
+			{l s='Make sure you see a (green) confirmation message underneath and you will be good to go.' mod='mdstripe'}
+		</p>
+		{if $tls_ok === MDStripe::ENUM_TLS_OK}
+			<div class="alert alert-success">
+				{l s='TLS v1.2 is supported' mod='mdstripe'}
+			</div>
+		{elseif $tls_ok === MDStripe::ENUM_TLS_ERROR}
+			<div class="alert alert-danger">
+				{l s='TLS v1.2 is not supported. Please upgrade your server.' mod='mdstripe'}
+			</div>
+		{else}
+			<div class="alert alert-warning">
+				{l s='Status is unknown. Please check if TLS v1.2 is supported.' mod='mdstripe'}
+			</div>
+		{/if}
+		<a class="btn btn-default" href="{$module_url}&checktls=1">{l s='Check for TLS v1.2 support' mod='mdstripe'}</a>
+	</div>
+{/if}

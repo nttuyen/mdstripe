@@ -135,6 +135,12 @@ class MDStripe extends PaymentModule
 
                 return;
             }
+            if (PHP_VERSION_ID < 50400) {
+                $this->context->controller->errors[] = $this->displayName.': '.$this->l('Your PHP version is not supported. Please upgrade to PHP 5.4 or higher.');
+                $this->disable();
+
+                return;
+            }
             $this->lastCheck = Configuration::get(self::LAST_CHECK);
             $this->checkUpdate();
         }
@@ -150,6 +156,11 @@ class MDStripe extends PaymentModule
         $this->makeModuleTrusted();
         if (extension_loaded('curl') == false) {
             $this->errors[] = $this->l('You have to enable the cURL extension on your server to install this module');
+
+            return false;
+        }
+        if (PHP_VERSION_ID < 50400) {
+            $this->errors[] = $this->l('Your PHP version is not supported. Please upgrade to PHP 5.4 or higher.');
 
             return false;
         }
@@ -326,6 +337,7 @@ class MDStripe extends PaymentModule
         $helper->token = Tools::getAdminTokenLite('AdminModules');
         $helper->currentIndex = AdminController::$currentIndex.'&configure='.$this->name;
         $helper->title = $this->displayName;
+        $helper->table = 'configuration';
         $helper->show_toolbar = false;
 
         return $helper->generateOptions(array_merge($this->getGeneralOptions(), $this->getOrderOptions()));
@@ -350,6 +362,7 @@ class MDStripe extends PaymentModule
                         'value' => Configuration::get(self::SECRET_KEY),
                         'validation' => 'isString',
                         'cast' => 'strval',
+                        'size' => 64,
                     ),
                     self::PUBLISHABLE_KEY => array(
                         'title' => $this->l('Publishable key'),
@@ -358,6 +371,7 @@ class MDStripe extends PaymentModule
                         'value' => Configuration::get(self::PUBLISHABLE_KEY),
                         'validation' => 'isString',
                         'cast' => 'strval',
+                        'size' => 64,
                     ),
                     self::COLLECT_BILLING => array(
                         'title' => $this->l('Collect billing address'),
@@ -693,7 +707,7 @@ class MDStripe extends PaymentModule
         if (Tools::isSubmit('orderstriperefund') && Tools::isSubmit('stripe_refund_order') && Tools::isSubmit('stripe_refund_amount')) {
             $this->processRefund();
         } elseif ($this->menu == self::MENU_SETTINGS) {
-            if (Tools::isSubmit('submitOptionsconfiguration')) {
+            if (Tools::isSubmit('submitOptionsconfiguration') || Tools::isSubmit('submitOptionsconfiguration')) {
                 $output .= $this->postProcessGeneralOptions();
                 $output .= $this->postProcessOrderOptions();
             }
@@ -1286,8 +1300,8 @@ class MDStripe extends PaymentModule
     public function hookDisplayAdminOrder($params)
     {
         if (StripeTransaction::getTransactionsByOrderId($params['id_order'], true)) {
-            $this->context->controller->addJS('https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js');
-            $this->context->controller->addCSS('https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css');
+            $this->context->controller->addJS($this->_path.'views/js/sweetalert.min.js');
+            $this->context->controller->addCSS($this->_path.'views/css/sweetalert.min.css', 'all');
 
             $order = new Order($params['id_order']);
             $orderCurrency = new Currency($order->id_currency);
