@@ -178,6 +178,12 @@ class MDStripe extends PaymentModule
         require_once dirname(__FILE__).'/sql/install.php';
 
         Configuration::updateGlobalValue(self::LATEST_VERSION, '0.0.0');
+        Configuration::updateGlobalValue(self::STATUS_VALIDATED, Configuration::get('PS_OS_PAYMENT'));
+        Configuration::updateGlobalValue(self::USE_STATUS_REFUND, true);
+        Configuration::updateGlobalValue(self::STATUS_REFUND, Configuration::get('PS_OS_REFUND'));
+        Configuration::updateGlobalValue(self::USE_STATUS_PARTIAL_REFUND, false);
+        Configuration::updateGlobalValue(self::STATUS_PARTIAL_REFUND, Configuration::get('PS_OS_REFUND'));
+        Configuration::updateGlobalValue(self::GENERATE_CREDIT_SLIP, true);
 
         return true;
     }
