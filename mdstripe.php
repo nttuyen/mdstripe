@@ -1262,7 +1262,11 @@ class MDStripe extends PaymentModule
     public function hookDisplayPaymentTop($params)
     {
         $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
-        $this->context->controller->addCSS($this->_path.'/views/css/front.css');
+        if (version_compare(_PS_VERSION_, '1.6.0.0', '>=')) {
+            $this->context->controller->addCSS($this->_path.'/views/css/front.css');
+        } else {
+            $this->context->controller->addCSS($this->_path.'/views/css/front15.css');
+        }
 
         return '';
     }
@@ -1281,7 +1285,11 @@ class MDStripe extends PaymentModule
             Tools::getValue('controller') === 'orderopc' ||
             Tools::getValue('controller') === 'order') {
             $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
-            $this->context->controller->addCSS($this->_path.'/views/css/front.css');
+            if (version_compare(_PS_VERSION_, '1.6.0.0', '>=')) {
+                $this->context->controller->addCSS($this->_path.'/views/css/front.css');
+            } else {
+                $this->context->controller->addCSS($this->_path.'/views/css/front15.css');
+            }
         }
     }
 
