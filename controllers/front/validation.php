@@ -52,8 +52,8 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
         $idCart = Tools::getValue('mdstripe-id_cart');
 
         $cart = new Cart((int) $idCart);
-        $customer = new Customer((int)$cart->id_customer);
-        $currency = new Currency((int)$cart->id_currency);
+        $customer = new Customer((int) $cart->id_customer);
+        $currency = new Currency((int) $cart->id_currency);
 
         $stripe = array(
             'secret_key' => Configuration::get(MDStripe::SECRET_KEY),
@@ -113,7 +113,7 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
             if ($idOrder) {
                 // Log transaction
                 $stripeTransaction = new StripeTransaction();
-                $stripeTransaction->card_last_digits = (int)$stripeCharge->source['last4'];
+                $stripeTransaction->card_last_digits = (int) $stripeCharge->source['last4'];
                 $stripeTransaction->id_charge = $stripeCharge->id;
                 $stripeTransaction->amount = $stripeAmount;
                 $stripeTransaction->id_order = $idOrder;
