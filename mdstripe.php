@@ -2037,6 +2037,9 @@ class MDStripe extends PaymentModule
      */
     protected function makeModuleTrusted()
     {
+        if (version_compare(_PS_VERSION_, '1.6.0.7', '<')) {
+            return;
+        }
         // Remove untrusted
         $untrustedXml = simplexml_load_file(_PS_ROOT_DIR_.Module::CACHE_FILE_UNTRUSTED_MODULES_LIST);
         $module = $untrustedXml->xpath('//module[@name="'.$this->name.'"]');
