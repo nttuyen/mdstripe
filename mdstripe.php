@@ -245,7 +245,6 @@ class MDStripe extends PaymentModule
 
 
         $this->context->smarty->assign(array(
-            'module_dir' => $this->_path,
             'menutabs' => $this->initNavigation(),
             'stripe_webhook_url' => $this->context->link->getModuleLink($this->name, 'hook', array(), Tools::usingSecureMode()),
         ));
@@ -1062,7 +1061,7 @@ class MDStripe extends PaymentModule
             'stripe_shopname' => $this->context->shop->name,
             'stripe_confirmation_page' => $link->getModuleLink($this->name, 'validation', array(), Tools::usingSecureMode()),
             'showPaymentLogos' => Configuration::get(self::SHOW_PAYMENT_LOGOS),
-            'stripeShopThumb' => $this->context->link->getMediaLink('/modules/mdstripe/views/img/shop'.$this->getShopId().'.jpg'),
+            'stripeShopThumb' => str_replace('http://', 'https://', $this->context->link->getMediaLink('/modules/mdstripe/views/img/shop'.$this->getShopId().'.jpg')),
             'stripe_collect_billing' => Configuration::get(self::COLLECT_BILLING),
             'stripe_collect_shipping' => Configuration::get(self::COLLECT_SHIPPING),
         ));
