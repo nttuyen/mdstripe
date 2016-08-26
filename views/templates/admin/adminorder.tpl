@@ -47,6 +47,7 @@
 </script>
 
 {if $smarty.const._PS_VERSION_|@addcslashes:'\'' < '1.6'}
+	<br />
 	<fieldset>
 		<legend>{l s='Stripe' mod='mdstripe'}</legend>
 		{$stripe_transaction_list}
