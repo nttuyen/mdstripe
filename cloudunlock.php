@@ -2,6 +2,10 @@
 require_once dirname(__FILE__).'/../../config/config.inc.php';
 header('Content-Type: text/plain');
 
+if (!defined('_PS_HOST_MODE_')) {
+    die('Error: this unlocker should only be used on PrestaShop Cloud!');
+}
+
 // Remove untrusted
 $untrustedXml = simplexml_load_file(_PS_ROOT_DIR_.Module::CACHE_FILE_UNTRUSTED_MODULES_LIST);
 $module = $untrustedXml->xpath('//module[@name="mdstripe"]');
