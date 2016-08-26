@@ -2039,6 +2039,7 @@ class MDStripe extends PaymentModule
             || !file_exists(_PS_ROOT_DIR_.Module::CACHE_FILE_TRUSTED_MODULES_LIST)
             || !file_exists(_PS_ROOT_DIR_.Module::CACHE_FILE_UNTRUSTED_MODULES_LIST)
             || !file_exists(_PS_ROOT_DIR_.Module::CACHE_FILE_TAB_MODULES_LIST)
+            || !class_exists('SimpleXMLElement')
         ) {
             return;
         }
