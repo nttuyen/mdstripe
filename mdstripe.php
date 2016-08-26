@@ -1262,7 +1262,7 @@ class MDStripe extends PaymentModule
     public function hookDisplayPaymentTop($params)
     {
         $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
-        $this->context->controller->addCSS($this->local_path.'/views/css/front.css');
+        $this->context->controller->addCSS($this->_path.'/views/css/front.css');
 
         return '';
     }
@@ -1281,6 +1281,7 @@ class MDStripe extends PaymentModule
             Tools::getValue('controller') === 'orderopc' ||
             Tools::getValue('controller') === 'order') {
             $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
+            $this->context->controller->addCSS($this->_path.'/views/css/front.css');
         }
     }
 
