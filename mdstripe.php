@@ -250,7 +250,7 @@ class MDStripe extends PaymentModule
             'stripe_webhook_url' => $this->context->link->getModuleLink($this->name, 'hook', array(), Tools::usingSecureMode()),
         ));
 
-        $output .= $this->context->smarty->fetch($this->local_path.'views/templates/admin/navbar.tpl');
+        $output .= $this->display(__FILE__, 'views/templates/admin/navbar.tpl');
 
         switch (Tools::getValue('menu')) {
             case self::MENU_TRANSACTIONS:
@@ -321,9 +321,9 @@ class MDStripe extends PaymentModule
             'baseUrl' => $this->baseUrl,
         ));
 
-        $output .= $this->context->smarty->fetch($this->local_path.'views/templates/admin/configure.tpl');
-        $output .= $this->context->smarty->fetch($this->local_path.'views/templates/admin/versioncheck.tpl');
-        $output .= $this->context->smarty->fetch($this->local_path.'views/templates/admin/tlscheck.tpl');
+        $output .= $this->display(__FILE__, 'views/templates/admin/configure.tpl');
+        $output .= $this->display(__FILE__, 'views/templates/admin/versioncheck.tpl');
+        $output .= $this->display(__FILE__, 'views/templates/admin/tlscheck.tpl');
 
         $output .= $this->renderGeneralOptions();
 
@@ -1068,7 +1068,7 @@ class MDStripe extends PaymentModule
         ));
 
         if (Module::isEnabled('onepagecheckoutps')) {
-            return $this->context->smarty->fetch($this->local_path.'views/templates/front/eupayment.tpl');
+            return $this->display(__FILE__, 'views/templates/front/eupayment.tpl');
         }
 
         return $this->display(__FILE__, 'views/templates/hook/payment.tpl');
@@ -1334,7 +1334,7 @@ class MDStripe extends PaymentModule
                 'id_order' => (int) $order->id,
             ));
 
-            return $this->context->smarty->fetch($this->local_path.'views/templates/admin/adminorder.tpl');
+            return $this->display(__FILE__, 'views/templates/admin/adminorder.tpl');
         }
 
         return '';
