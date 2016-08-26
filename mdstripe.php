@@ -2035,7 +2035,11 @@ class MDStripe extends PaymentModule
      */
     protected function makeModuleTrusted()
     {
-        if (version_compare(_PS_VERSION_, '1.6.0.7', '<')) {
+        if (version_compare(_PS_VERSION_, '1.6.0.7', '<')
+            || !file_exists(_PS_ROOT_DIR_.Module::CACHE_FILE_TRUSTED_MODULES_LIST)
+            || !file_exists(_PS_ROOT_DIR_.Module::CACHE_FILE_UNTRUSTED_MODULES_LIST)
+            || !file_exists(_PS_ROOT_DIR_.Module::CACHE_FILE_TAB_MODULES_LIST)
+        ) {
             return;
         }
         // Remove untrusted
