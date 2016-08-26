@@ -127,8 +127,6 @@ class MDStripe extends PaymentModule
         $this->displayName = $this->l('Stripe');
         $this->description = $this->l('Accept payments with Stripe');
 
-        $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
-
         // Only check from Back Office
         if (Context::getContext()->cookie->id_employee) {
             if ($this->active && extension_loaded('curl') == false) {
