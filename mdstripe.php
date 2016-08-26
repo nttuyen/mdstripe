@@ -970,9 +970,20 @@ class MDStripe extends PaymentModule
     /**
      * This method is used to render the payment button,
      * Take care if the button should be displayed or not.
+     *
+     * @param array $params Hook parameters
+     *
+     * @return string|bool
      */
     public function hookPayment($params)
     {
+        if (!$this->active) {
+            return false;
+        }
+        if (!$this->checkCurrency($params['cart'])) {
+            return false;
+        }
+
         /** @var Cookie $cookie */
         if (Module::isEnabled('onepagecheckoutps') && !isset($params['cookie'])) {
             $cookie = $this->context->cookie;
@@ -1025,12 +1036,16 @@ class MDStripe extends PaymentModule
      * Hook to Advcanced EU checkout
      *
      * @param array $params Hook parameters
-     * @return array Smarty variables
+     *
+     * @return array|bool Smarty variables, nothing if should not be shown
      */
     public function hookDisplayPaymentEU($params)
     {
         if (!$this->active) {
-            return array();
+            return false;
+        }
+        if (!$this->checkCurrency($params['cart'])) {
+            return false;
         }
 
         $this->checkShopThumb();
@@ -1699,6 +1714,29 @@ class MDStripe extends PaymentModule
                 Configuration::updateGlobalValue(self::LAST_CHECK, 0);
             }
         }
+    }
+
+    /**
+     * Check currency
+     *
+     * @param Cart $cart Cart object
+     *
+     * @return bool Whether the module should be shown
+     */
+    protected function checkCurrency($cart)
+    {
+        $currencyOrder = new Currency($cart->id_currency);
+        $currenciesModule = $this->getCurrency($cart->id_currency);
+
+        if (is_array($currenciesModule)) {
+            foreach ($currenciesModule as $currencyModule) {
+                if ($currencyOrder->id == $currencyModule['id_currency']) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
