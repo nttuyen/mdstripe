@@ -2064,25 +2064,31 @@ class MDStripe extends PaymentModule
     protected function makeModuleTrusted()
     {
         if (version_compare(_PS_VERSION_, '1.6.0.7', '<')
-            || !file_exists(_PS_ROOT_DIR_.Module::CACHE_FILE_TRUSTED_MODULES_LIST)
-            || !file_exists(_PS_ROOT_DIR_.Module::CACHE_FILE_UNTRUSTED_MODULES_LIST)
-            || !file_exists(_PS_ROOT_DIR_.Module::CACHE_FILE_TAB_MODULES_LIST)
+            || !@filemtime(_PS_ROOT_DIR_.Module::CACHE_FILE_TRUSTED_MODULES_LIST)
+            || !@filemtime(_PS_ROOT_DIR_.Module::CACHE_FILE_UNTRUSTED_MODULES_LIST)
+            || !@filemtime(_PS_ROOT_DIR_.Module::CACHE_FILE_TAB_MODULES_LIST)
             || !class_exists('SimpleXMLElement')
         ) {
             return;
         }
         // Remove untrusted
-        $untrustedXml = simplexml_load_file(_PS_ROOT_DIR_.Module::CACHE_FILE_UNTRUSTED_MODULES_LIST);
+        $untrustedXml = @simplexml_load_file(_PS_ROOT_DIR_.Module::CACHE_FILE_UNTRUSTED_MODULES_LIST);
+        if (!is_object($untrustedXml)) {
+            return;
+        }
         $module = $untrustedXml->xpath('//module[@name="'.$this->name.'"]');
         if (empty($module)) {
             // Module list has not been refreshed, return
             return;
         }
         unset($module[0][0]);
-        $untrustedXml->saveXML(_PS_ROOT_DIR_.Module::CACHE_FILE_UNTRUSTED_MODULES_LIST);
+        @$untrustedXml->saveXML(_PS_ROOT_DIR_.Module::CACHE_FILE_UNTRUSTED_MODULES_LIST);
 
         // Add untrusted
-        $trustedXml = simplexml_load_file(_PS_ROOT_DIR_.Module::CACHE_FILE_TRUSTED_MODULES_LIST);
+        $trustedXml = @simplexml_load_file(_PS_ROOT_DIR_.Module::CACHE_FILE_TRUSTED_MODULES_LIST);
+        if (!is_object($trustedXml)) {
+            return;
+        }
         /** @var SimpleXMLElement $modules */
         @$modules = $trustedXml->xpath('//modules')[0];
         if (empty($modules)) {
@@ -2091,10 +2097,13 @@ class MDStripe extends PaymentModule
         /** @var SimpleXMLElement $module */
         $module = $modules->addChild('module');
         $module->addAttribute('name', $this->name);
-        $trustedXml->saveXML(_PS_ROOT_DIR_.Module::CACHE_FILE_TRUSTED_MODULES_LIST);
+        @$trustedXml->saveXML(_PS_ROOT_DIR_.Module::CACHE_FILE_TRUSTED_MODULES_LIST);
 
         // Add to active payments list
-        $modulesTabXml = simplexml_load_file(_PS_ROOT_DIR_.Module::CACHE_FILE_TAB_MODULES_LIST);
+        $modulesTabXml = @simplexml_load_file(_PS_ROOT_DIR_.Module::CACHE_FILE_TAB_MODULES_LIST);
+        if (!is_object($modulesTabXml)) {
+            return;
+        }
 
         $moduleFound = $modulesTabXml->xpath('//tab[@class_name="AdminPayment"]/module[@name="'.$this->name.'"]');
         if (!empty($moduleFound)) {
@@ -2122,6 +2131,6 @@ class MDStripe extends PaymentModule
         $module = $modules->addChild('module');
         $module->addAttribute('name', $this->name);
         $module->addAttribute('position', $highestPosition);
-        $modulesTabXml->saveXML(_PS_ROOT_DIR_.Module::CACHE_FILE_TAB_MODULES_LIST);
+        @$modulesTabXml->saveXML(_PS_ROOT_DIR_.Module::CACHE_FILE_TAB_MODULES_LIST);
     }
 }
