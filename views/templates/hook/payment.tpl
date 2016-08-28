@@ -21,22 +21,15 @@
 		<input type="hidden" name="mdstripe-id_cart" value="{$id_cart|escape:'htmlall':'UTF-8'}">
 	</form>
 	<p class="payment_module" id="mdstripe_payment_button">
-		{if $cart->getOrderTotal() < 2}
-			<a href="">
-				<img src="{$domain|cat:$payment_button|escape:'html':'UTF-8'}" alt="{l s='Pay with Stripe' mod='mdstripe'}" />
-				{l s='Minimum amount required in order to pay with this payment module:' mod='mdstripe'} {convertPrice price=2}
-			</a>
-		{else}
-			<a id="mdstripe_payment_link" href="#" title="{l s='Pay with Stripe' mod='mdstripe'}">
-				<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/stripebtnlogo15.png" alt="{l s='Pay with Stripe' mod='mdstripe'}" width="108" height="46" />
-				{l s='Pay with Stripe' mod='mdstripe'}
-				{if $showPaymentLogos}
-					<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/creditcards.png" alt="{l s='Credit cards' mod='mdstripe'}" />
-					{if $stripe_alipay}<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/alipay.png" alt="{l s='Alipay' mod='mdstripe'}" />{/if}
-					{if $stripe_bitcoin}<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/bitcoin.png" alt="{l s='Bitcoin' mod='mdstripe'}" />{/if}
-				{/if}
-			</a>
-		{/if}
+		<a id="mdstripe_payment_link" href="#" title="{l s='Pay with Stripe' mod='mdstripe'}">
+			<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/stripebtnlogo15.png" alt="{l s='Pay with Stripe' mod='mdstripe'}" width="108" height="46" />
+			{l s='Pay with Stripe' mod='mdstripe'}
+			{if $showPaymentLogos}
+				<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/creditcards.png" alt="{l s='Credit cards' mod='mdstripe'}" />
+				{if $stripe_alipay}<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/alipay.png" alt="{l s='Alipay' mod='mdstripe'}" />{/if}
+				{if $stripe_bitcoin}<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/bitcoin.png" alt="{l s='Bitcoin' mod='mdstripe'}" />{/if}
+			{/if}
+		</a>
 	</p>
 {else}
 	<div class="row">
@@ -45,22 +38,15 @@
 		</form>
 		<div class="col-xs-12 col-md-12">
 			<p class="payment_module" id="mdstripe_payment_button">
-				{if $cart->getOrderTotal() < 2}
-					<a href="">
-						<img src="{$domain|cat:$payment_button|escape:'html':'UTF-8'}" alt="{l s='Pay with Stripe' mod='mdstripe'}" />
-						{l s='Minimum amount required in order to pay with this payment module:' mod='mdstripe'} {convertPrice price=2}
-					</a>
-				{else}
-					<a id="mdstripe_payment_link" href="#" title="{l s='Pay with Stripe' mod='mdstripe'}">
-						<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/stripebtnlogo.png" alt="{l s='Pay with Stripe' mod='mdstripe'}" width="64" height="64" />
-						{l s='Pay with Stripe' mod='mdstripe'}
-						{if $showPaymentLogos}
-							<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/creditcards.png" alt="{l s='Credit cards' mod='mdstripe'}" />
-							{if $stripe_alipay}<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/alipay.png" alt="{l s='Alipay' mod='mdstripe'}" />{/if}
-							{if $stripe_bitcoin}<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/bitcoin.png" alt="{l s='Bitcoin' mod='mdstripe'}" />{/if}
-						{/if}
-					</a>
-				{/if}
+				<a id="mdstripe_payment_link" href="#" title="{l s='Pay with Stripe' mod='mdstripe'}">
+					<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/stripebtnlogo.png" alt="{l s='Pay with Stripe' mod='mdstripe'}" width="64" height="64" />
+					{l s='Pay with Stripe' mod='mdstripe'}
+					{if $showPaymentLogos}
+						<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/creditcards.png" alt="{l s='Credit cards' mod='mdstripe'}" />
+						{if $stripe_alipay}<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/alipay.png" alt="{l s='Alipay' mod='mdstripe'}" />{/if}
+						{if $stripe_bitcoin}<img src="{$module_dir|escape:'htmlall':'UTF-8'}/views/img/bitcoin.png" alt="{l s='Bitcoin' mod='mdstripe'}" />{/if}
+					{/if}
+				</a>
 			</p>
 		</div>
 	</div>
