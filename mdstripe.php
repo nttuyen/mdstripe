@@ -128,7 +128,7 @@ class MdStripe extends PaymentModule
         $this->description = $this->l('Accept payments with Stripe');
 
         // Only check from Back Office
-        if (Context::getContext()->cookie->id_employee) {
+        if (isset(Context::getContext()->employee->id) && Context::getContext()->employee->id) {
             if ($this->active && extension_loaded('curl') == false) {
                 $this->context->controller->errors[] = $this->displayName.': '.$this->l('You have to enable the cURL extension on your server in order to use this module');
                 $this->disable();
