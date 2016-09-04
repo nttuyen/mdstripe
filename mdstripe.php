@@ -1467,6 +1467,12 @@ class MdStripe extends PaymentModule
      */
     public function getShopId()
     {
+        if (isset(Context::getContext()->employee->id) && Context::getContext()->employee->id && Shop::getContext() == Shop::CONTEXT_SHOP) {
+            $cookie = Context::getContext()->cookie->getFamily('shopContext');
+
+            return (int) Tools::substr($cookie['shopContext'], 2, count($cookie['shopContext']));
+        }
+
         return (int) Context::getContext()->shop->id;
     }
 
