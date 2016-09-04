@@ -111,7 +111,7 @@ class MdStripe extends PaymentModule
     {
         $this->name = 'mdstripe';
         $this->tab = 'payments_gateways';
-        $this->version = '1.0.11';
+        $this->version = '1.0.9';
         $this->author = 'Mijn Presta';
         $this->need_instance = 1;
 
@@ -1786,21 +1786,30 @@ class MdStripe extends PaymentModule
                 $releases = $client->api('repo')->releases()->all(self::GITHUB_USER, self::GITHUB_REPO);
                 $tags = array();
                 foreach ($releases as $release) {
-                    if (isset($release['tag_name'])) {
+                    if (isset($release['tag_name']) &&
+                        version_compare($release['tag_name'], $this->version, '>') &&
+                        Composer\Semver\Semver::satisfies($release['tag_name'], '~'.$this->version)) {
                         $tags[] = $release['tag_name'];
                     }
                 }
-                $expression = new vierbergenlars\SemVer\expression('~'.$this->version);
-                $latestPatch = $expression->maxSatisfying($tags)->getVersion();
+                // Sort version in descending order
+                $tags = Composer\Semver\Semver::rsort($tags);
 
+                if (empty($tags)) {
+                    return $this->addConfirmation($this->l('This module is up to date.'));
+                }
+
+                $latestPatch = $tags[0];
                 $latestRelease = $client->api('repo')->releases()->all(self::GITHUB_USER, self::GITHUB_REPO, $latestPatch);
 
-                if ($latestPatch && version_compare($this->version, $latestPatch, '<') &&
-                    isset($latestRelease['assets'][0]['browser_download_url'])) {
-                    Configuration::updateGlobalValue(self::LATEST_VERSION, $latestRelease['tag_name']);
-                    Configuration::updateGlobalValue(self::DOWNLOAD_URL, $latestRelease['assets'][0]['browser_download_url']);
-                    $this->latestVersion = $latestRelease['tag_name'];
-                    $this->downloadUrl = $latestRelease['assets'][0]['browser_download_url'];
+                if (!empty($latestRelease)) {
+                    $latestRelease = $latestRelease[0];
+                    if ($latestPatch && isset($latestRelease['assets'][0]['browser_download_url'])) {
+                        Configuration::updateGlobalValue(self::LATEST_VERSION, $latestRelease['tag_name']);
+                        Configuration::updateGlobalValue(self::DOWNLOAD_URL, $latestRelease['assets'][0]['browser_download_url']);
+                        $this->latestVersion = $latestPatch;
+                        $this->downloadUrl = $latestRelease['assets'][0]['browser_download_url'];
+                    }
                 }
             } catch (Exception $e) {
                 $this->addWarning($e->getMessage());
