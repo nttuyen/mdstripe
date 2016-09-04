@@ -3,5 +3,10 @@
         "stripe/stripe-php": "~3.21",
         "knplabs/github-api": "~1.7",
         "vierbergenlars/php-semver": "~3.0"
+    },
+    "autoload": {
+        "classmap": [
+            "classes/"
+        ]
     }
 }

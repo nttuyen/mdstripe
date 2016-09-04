@@ -22,13 +22,14 @@ if (!defined('_PS_VERSION_')) {
 }
 
 require_once dirname(__FILE__).'/vendor/autoload.php';
-require_once dirname(__FILE__).'/classes/autoload.php';
 
 /**
  * Class MDStripe
  */
 class MdStripe extends PaymentModule
 {
+    const MIN_PHP_VERSION = 50400;
+
     const MENU_SETTINGS = 1;
     const MENU_TRANSACTIONS = 2;
 
@@ -135,7 +136,7 @@ class MdStripe extends PaymentModule
 
                 return;
             }
-            if (PHP_VERSION_ID < 50400) {
+            if (PHP_VERSION_ID < self::MIN_PHP_VERSION) {
                 $this->context->controller->errors[] = $this->displayName.': '.$this->l('Your PHP version is not supported. Please upgrade to PHP 5.4 or higher.');
                 $this->disable();
 
@@ -159,7 +160,7 @@ class MdStripe extends PaymentModule
 
             return false;
         }
-        if (PHP_VERSION_ID < 50400) {
+        if (PHP_VERSION_ID < self::MIN_PHP_VERSION) {
             $this->errors[] = $this->l('Your PHP version is not supported. Please upgrade to PHP 5.4 or higher.');
 
             return false;
