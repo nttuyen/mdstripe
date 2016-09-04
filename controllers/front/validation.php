@@ -25,7 +25,7 @@ require_once dirname(__FILE__).'/../../classes/autoload.php';
  */
 class MdstripeValidationModuleFrontController extends ModuleFrontController
 {
-    /** @var MDStripe $module */
+    /** @var MdStripe $module */
     public $module;
 
     /**
@@ -66,8 +66,8 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
         $currency = new Currency((int) $cart->id_currency);
 
         $stripe = array(
-            'secret_key' => Configuration::get(MDStripe::SECRET_KEY),
-            'publishable_key' => Configuration::get(MDStripe::PUBLISHABLE_KEY),
+            'secret_key' => Configuration::get(MdStripe::SECRET_KEY),
+            'publishable_key' => Configuration::get(MdStripe::PUBLISHABLE_KEY),
         );
 
         \Stripe\Stripe::setApiKey($stripe['secret_key']);
@@ -85,7 +85,7 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
         }
 
         $stripeAmount = $cart->getOrderTotal();
-        if (!in_array(Tools::strtolower($currency->iso_code), MDStripe::$zeroDecimalCurrencies)) {
+        if (!in_array(Tools::strtolower($currency->iso_code), MdStripe::$zeroDecimalCurrencies)) {
             $stripeAmount = (int) ($stripeAmount * 100);
         }
 
@@ -105,7 +105,7 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
         }
 
         if ($stripeCharge->paid === true) {
-            $paymentStatus = Configuration::get(MDStripe::STATUS_VALIDATED);
+            $paymentStatus = Configuration::get(MdStripe::STATUS_VALIDATED);
             $message = null;
 
             /**

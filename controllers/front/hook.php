@@ -25,7 +25,7 @@ require_once dirname(__FILE__).'/../../classes/autoload.php';
  */
 class MdstripeHookModuleFrontController extends ModuleFrontController
 {
-    /** @var MDStripe $module */
+    /** @var MdStripe $module */
     public $module;
 
     /**
@@ -37,7 +37,7 @@ class MdstripeHookModuleFrontController extends ModuleFrontController
 
         if (!empty($body) && $data = Tools::jsonDecode($body, true)) {
             // Verify with Stripe
-            \Stripe\Stripe::setApiKey(Configuration::get(MDStripe::SECRET_KEY));
+            \Stripe\Stripe::setApiKey(Configuration::get(MdStripe::SECRET_KEY));
             $event = \Stripe\Event::retrieve($data['id']);
             switch ($data['type']) {
                 case 'charge.refunded':
@@ -94,15 +94,15 @@ class MdstripeHookModuleFrontController extends ModuleFrontController
 
         $totalAmount = $order->getTotalPaid();
 
-        if (!in_array($charge->currency, MDStripe::$zeroDecimalCurrencies)) {
+        if (!in_array($charge->currency, MdStripe::$zeroDecimalCurrencies)) {
             $totalAmount = (int) (Tools::ps_round($totalAmount * 100, 0));
         }
 
         $amountRefunded = (int) $charge->amount_refunded;
 
-        if (Configuration::get(MDStripe::USE_STATUS_REFUND) && (int) ($amountRefunded - $totalAmount) === 0) {
+        if (Configuration::get(MdStripe::USE_STATUS_REFUND) && (int) ($amountRefunded - $totalAmount) === 0) {
             // Full refund
-            if (Configuration::get(MDStripe::GENERATE_CREDIT_SLIP)) {
+            if (Configuration::get(MdStripe::GENERATE_CREDIT_SLIP)) {
                 $sql = new DbQuery();
                 $sql->select('od.`id_order_detail`, od.`product_quantity`');
                 $sql->from('order_detail', 'od');
@@ -133,7 +133,7 @@ class MdstripeHookModuleFrontController extends ModuleFrontController
 
             $orderHistory = new OrderHistory();
             $orderHistory->id_order = $order->id;
-            $orderHistory->changeIdOrderState((int) Configuration::get(MDStripe::STATUS_REFUND), $idOrder);
+            $orderHistory->changeIdOrderState((int) Configuration::get(MdStripe::STATUS_REFUND), $idOrder);
             $orderHistory->addWithemail(true);
         } else {
             $transaction = new StripeTransaction();
@@ -145,10 +145,10 @@ class MdstripeHookModuleFrontController extends ModuleFrontController
             $transaction->source = StripeTransaction::SOURCE_WEBHOOK;
             $transaction->add();
 
-            if (Configuration::get(MDStripe::USE_STATUS_PARTIAL_REFUND)) {
+            if (Configuration::get(MdStripe::USE_STATUS_PARTIAL_REFUND)) {
                 $orderHistory = new OrderHistory();
                 $orderHistory->id_order = $order->id;
-                $orderHistory->changeIdOrderState((int) Configuration::get(MDStripe::STATUS_PARTIAL_REFUND), $idOrder);
+                $orderHistory->changeIdOrderState((int) Configuration::get(MdStripe::STATUS_PARTIAL_REFUND), $idOrder);
                 $orderHistory->addWithemail(true);
             }
         }

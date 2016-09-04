@@ -27,7 +27,7 @@ require_once dirname(__FILE__).'/classes/autoload.php';
 /**
  * Class MDStripe
  */
-class MDStripe extends PaymentModule
+class MdStripe extends PaymentModule
 {
     const MENU_SETTINGS = 1;
     const MENU_TRANSACTIONS = 2;
@@ -242,7 +242,6 @@ class MDStripe extends PaymentModule
             ));
 
         $output .= $this->postProcess();
-
 
         $this->context->smarty->assign(array(
             'menutabs' => $this->initNavigation(),
@@ -644,7 +643,7 @@ class MDStripe extends PaymentModule
         foreach ($results as &$result) {
             // Process results
             $currency = $this->getCurrencyIdByOrderId($result['id_order']);
-            if (!in_array(Tools::strtolower($currency->iso_code), MDStripe::$zeroDecimalCurrencies)) {
+            if (!in_array(Tools::strtolower($currency->iso_code), MdStripe::$zeroDecimalCurrencies)) {
                 $result['amount'] = (float) ($result['amount'] / 100);
             }
             $result['amount'] = Tools::displayPrice($result['amount'], $currency);
@@ -914,7 +913,7 @@ class MDStripe extends PaymentModule
         $amountRefunded = StripeTransaction::getRefundedAmountByOrderId($idOrder);
 
         try {
-            \Stripe\Stripe::setApiKey(Configuration::get(MDStripe::SECRET_KEY));
+            \Stripe\Stripe::setApiKey(Configuration::get(MdStripe::SECRET_KEY));
             \Stripe\Refund::create(array(
                 'charge' => $idCharge,
                 'amount' => $amount,
@@ -928,9 +927,9 @@ class MDStripe extends PaymentModule
             return;
         }
 
-        if (Configuration::get(MDStripe::USE_STATUS_REFUND) && 0 === (int) ($orderTotal - ($amountRefunded + $amount))) {
+        if (Configuration::get(MdStripe::USE_STATUS_REFUND) && 0 === (int) ($orderTotal - ($amountRefunded + $amount))) {
             // Full refund
-            if (Configuration::get(MDStripe::GENERATE_CREDIT_SLIP)) {
+            if (Configuration::get(MdStripe::GENERATE_CREDIT_SLIP)) {
                 $sql = new DbQuery();
                 $sql->select('od.`id_order_detail`, od.`product_quantity`');
                 $sql->from('order_detail', 'od');
@@ -961,7 +960,7 @@ class MDStripe extends PaymentModule
 
             $orderHistory = new OrderHistory();
             $orderHistory->id_order = $order->id;
-            $orderHistory->changeIdOrderState((int) Configuration::get(MDStripe::STATUS_REFUND), $idOrder);
+            $orderHistory->changeIdOrderState((int) Configuration::get(MdStripe::STATUS_REFUND), $idOrder);
             $orderHistory->addWithemail(true);
         } else {
             $transaction = new StripeTransaction();
@@ -973,10 +972,10 @@ class MDStripe extends PaymentModule
             $transaction->source = StripeTransaction::SOURCE_BACK_OFFICE;
             $transaction->add();
 
-            if (Configuration::get(MDStripe::USE_STATUS_PARTIAL_REFUND)) {
+            if (Configuration::get(MdStripe::USE_STATUS_PARTIAL_REFUND)) {
                 $orderHistory = new OrderHistory();
                 $orderHistory->id_order = $order->id;
-                $orderHistory->changeIdOrderState((int) Configuration::get(MDStripe::STATUS_PARTIAL_REFUND), $idOrder);
+                $orderHistory->changeIdOrderState((int) Configuration::get(MdStripe::STATUS_PARTIAL_REFUND), $idOrder);
                 $orderHistory->addWithemail(true);
             }
         }
@@ -1321,7 +1320,7 @@ class MDStripe extends PaymentModule
             $orderCurrency = new Currency($order->id_currency);
 
             $totalRefundLeft = $order->getTotalPaid();
-            if (!in_array(Tools::strtolower($orderCurrency->iso_code), MDStripe::$zeroDecimalCurrencies)) {
+            if (!in_array(Tools::strtolower($orderCurrency->iso_code), MdStripe::$zeroDecimalCurrencies)) {
                 $totalRefundLeft = (int) (Tools::ps_round($totalRefundLeft * 100, 0));
             }
 
@@ -1329,7 +1328,7 @@ class MDStripe extends PaymentModule
 
             $totalRefundLeft -= $amount;
 
-            if (!in_array(Tools::strtolower($orderCurrency->iso_code), MDStripe::$zeroDecimalCurrencies)) {
+            if (!in_array(Tools::strtolower($orderCurrency->iso_code), MdStripe::$zeroDecimalCurrencies)) {
                 $totalRefundLeft = (float) ($totalRefundLeft / 100);
             }
 
@@ -1361,7 +1360,7 @@ class MDStripe extends PaymentModule
         $order = new Order($idOrder);
         $currency = Currency::getCurrencyInstance($order->id_currency);
 
-        if (!in_array(Tools::strtolower($currency->iso_code), MDStripe::$zeroDecimalCurrencies)) {
+        if (!in_array(Tools::strtolower($currency->iso_code), MdStripe::$zeroDecimalCurrencies)) {
             foreach ($results as &$result) {
                 // Process results
                 $result['amount'] = (float) ($result['amount'] / 100);
@@ -1992,7 +1991,7 @@ class MDStripe extends PaymentModule
                     }
                 }
             }
-        } else {
+        } elseif (@filemtime(_PS_TOOL_DIR_.'tar/Archive_Tar.php')) {
             require_once(_PS_TOOL_DIR_.'tar/Archive_Tar.php');
             $archive = new Archive_Tar($file);
             if ($archive->extract($tmpFolder)) {

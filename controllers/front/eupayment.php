@@ -58,7 +58,7 @@ class MdstripeEupaymentModuleFrontController extends ModuleFrontController
         $link = $this->context->link;
 
         $stripeAmount = $cart->getOrderTotal();
-        if (!in_array(Tools::strtolower($currency->iso_code), MDStripe::$zeroDecimalCurrencies)) {
+        if (!in_array(Tools::strtolower($currency->iso_code), MdStripe::$zeroDecimalCurrencies)) {
             $stripeAmount = (int) ($stripeAmount * 100);
         }
 
@@ -69,15 +69,15 @@ class MdstripeEupaymentModuleFrontController extends ModuleFrontController
             'stripe_amount' => $stripeAmount,
             'stripe_confirmation_page' => $link->getModuleLink('mdstripe', 'validation'),
             'id_cart' => (int) $cart->id,
-            'stripe_secret_key' => Configuration::get(MDStripe::SECRET_KEY),
-            'stripe_publishable_key' => Configuration::get(MDStripe::PUBLISHABLE_KEY),
-            'stripe_locale' => MDStripe::getStripeLanguage($this->context->language->language_code),
-            'stripe_zipcode' => (bool) Configuration::get(MDStripe::ZIPCODE),
-            'stripe_bitcoin' => (bool) Configuration::get(MDStripe::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
-            'stripe_alipay' => (bool) Configuration::get(MDStripe::ALIPAY),
+            'stripe_secret_key' => Configuration::get(MdStripe::SECRET_KEY),
+            'stripe_publishable_key' => Configuration::get(MdStripe::PUBLISHABLE_KEY),
+            'stripe_locale' => MdStripe::getStripeLanguage($this->context->language->language_code),
+            'stripe_zipcode' => (bool) Configuration::get(MdStripe::ZIPCODE),
+            'stripe_bitcoin' => (bool) Configuration::get(MdStripe::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
+            'stripe_alipay' => (bool) Configuration::get(MdStripe::ALIPAY),
             'stripe_shopname' => $this->context->shop->name,
-            'stripe_collect_billing' => Configuration::get(MDStripe::COLLECT_BILLING),
-            'stripe_collect_shipping' => Configuration::get(MDStripe::COLLECT_SHIPPING),
+            'stripe_collect_billing' => Configuration::get(MdStripe::COLLECT_BILLING),
+            'stripe_collect_shipping' => Configuration::get(MdStripe::COLLECT_SHIPPING),
         ));
 
         $this->setTemplate('eupayment.tpl');
