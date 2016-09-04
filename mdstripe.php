@@ -1783,15 +1783,24 @@ class MdStripe extends PaymentModule
 
             // Check the release tag
             try {
-                $latestRelease = $client->api('repo')->releases()->latest(self::GITHUB_USER, self::GITHUB_REPO);
-                if (isset($latestRelease['tag_name']) && $latestRelease['tag_name']) {
-                    if (version_compare($this->version, $latestRelease['tag_name'], '<') &&
-                        isset($latestRelease['assets'][0]['browser_download_url'])) {
-                        Configuration::updateGlobalValue(self::LATEST_VERSION, $latestRelease['tag_name']);
-                        Configuration::updateGlobalValue(self::DOWNLOAD_URL, $latestRelease['assets'][0]['browser_download_url']);
-                        $this->latestVersion = $latestRelease['tag_name'];
-                        $this->downloadUrl = $latestRelease['assets'][0]['browser_download_url'];
+                $releases = $client->api('repo')->releases()->all(self::GITHUB_USER, self::GITHUB_REPO);
+                $tags = array();
+                foreach ($releases as $release) {
+                    if (isset($release['tag_name'])) {
+                        $tags[] = $release['tag_name'];
                     }
+                }
+                $expression = new vierbergenlars\SemVer\expression('~'.$this->version);
+                $latestPatch = $expression->maxSatisfying($tags)->getVersion();
+
+                $latestRelease = $client->api('repo')->releases()->all(self::GITHUB_USER, self::GITHUB_REPO, $latestPatch);
+
+                if ($latestPatch && version_compare($this->version, $latestPatch, '<') &&
+                    isset($latestRelease['assets'][0]['browser_download_url'])) {
+                    Configuration::updateGlobalValue(self::LATEST_VERSION, $latestRelease['tag_name']);
+                    Configuration::updateGlobalValue(self::DOWNLOAD_URL, $latestRelease['assets'][0]['browser_download_url']);
+                    $this->latestVersion = $latestRelease['tag_name'];
+                    $this->downloadUrl = $latestRelease['assets'][0]['browser_download_url'];
                 }
             } catch (Exception $e) {
                 $this->addWarning($e->getMessage());
