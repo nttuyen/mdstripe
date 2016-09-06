@@ -15,17 +15,6 @@
  *  @copyright 2016 Michael Dekker
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
-{capture name=path}
-	<a href="{$orderLink|escape:'html':'UTF-8'}">
-		{l s='Order'}
-	</a>
-	<span class="navigation-pipe">
-        {$navigationPipe}
-    </span>
-	<span class="navigation_page">
-        {l s='Payment error'}
-    </span>
-{/capture}
 <div>
 	<h3>{l s='An error occurred' mod='mdstripe'}:</h3>
 	<ul class="alert alert-danger">

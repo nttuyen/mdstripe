@@ -1020,7 +1020,7 @@ class MdStripe extends PaymentModule
         }
         $carrier = new Carrier((int) $cart->id_carrier);
         if (Validate::isLoadedObject($carrier)) {
-            if (!$this->checkCarrier($params['cart'])) {
+            if (!$this->checkCarrier($carrier->id_reference)) {
                 return false;
             }
         }
@@ -1108,7 +1108,7 @@ class MdStripe extends PaymentModule
         }
         $carrier = new Carrier((int) $cart->id_carrier);
         if (Validate::isLoadedObject($carrier)) {
-            if (!$this->checkCarrier($params['cart'])) {
+            if (!$this->checkCarrier($carrier->id_reference)) {
                 return false;
             }
         }
@@ -1164,7 +1164,7 @@ class MdStripe extends PaymentModule
         }
         $carrier = new Carrier((int) $cart->id_carrier);
         if (Validate::isLoadedObject($carrier)) {
-            if (!$this->checkCarrier($params['cart'])) {
+            if (!$this->checkCarrier($carrier->id_reference)) {
                 return false;
             }
         }
@@ -1237,20 +1237,32 @@ class MdStripe extends PaymentModule
         }
 
         /** @var Order $order */
-        $order = $params['objOrder'];
+        if (version_compare(_PS_VERSION_, '1.7.0.0', '<')) {
+            $order = $params['objOrder'];
+        } else {
+            $order = $params['order'];
+        }
+        $currency = new Currency($order->id_currency);
+        $totalToPay = (float) $order->getTotalPaid($currency);
 
         if ($order->getCurrentOrderState()->id != Configuration::get('PS_OS_ERROR')) {
-            $this->smarty->assign('status', 'ok');
+            $this->context->smarty->assign('status', 'ok');
         }
 
-        $this->smarty->assign(array(
+        $this->context->smarty->assign(array(
             'id_order' => $order->id,
             'reference' => $order->reference,
             'params' => $params,
-            'total' => Tools::displayPrice($params['total_to_pay'], $params['currencyObj'], false),
+            'total' => Tools::displayPrice($totalToPay, $currency, false),
         ));
 
-        return $this->display(__FILE__, 'views/templates/front/confirmation.tpl');
+        if (version_compare(_PS_VERSION_, '1.7.0.0', '<')) {
+            return $this->display(__FILE__, 'views/templates/front/confirmation.tpl');
+        } else {
+            $this->context->smarty->assign('shop_name', $this->context->shop->name);
+
+            return $this->display(__FILE__, 'views/templates/front/confirmation17.tpl');
+        }
     }
 
     /**
@@ -1909,12 +1921,13 @@ class MdStripe extends PaymentModule
      * Check carrier
      * For PS1.7+
      *
-     * @param int $carrierReference Carrier Reference
+     * @param int $reference Carrier Reference
      *
      * @return bool Whether the module should be shown
      */
-    protected function checkCarrier($carrierReference)
+    protected function checkCarrier($reference)
     {
+        /** @var Cart $cart */
         if (version_compare(_PS_VERSION_, '1.7.0.0', '<')) {
             return true;
         }
@@ -1923,7 +1936,7 @@ class MdStripe extends PaymentModule
         $sql->select('mc.`id_module`');
         $sql->from('module_carrier', 'mc');
         $sql->where('mc.`id_module` = '.(int) $this->id);
-        $sql->where('mc.`id_reference` = '.(int) $carrierReference);
+        $sql->where('mc.`id_reference` = '.(int) $reference);
         $sql->where('mc.`id_shop` = '.(int) $this->getShopId());
 
         return (bool) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
