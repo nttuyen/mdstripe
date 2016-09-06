@@ -1275,9 +1275,9 @@ class MdStripe extends PaymentModule
     {
         $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
         if (version_compare(_PS_VERSION_, '1.6.0.0', '>=')) {
-            $this->context->controller->addCSS($this->_path.'/views/css/front.css');
+            $this->context->controller->addCSS($this->_path.'/views/css/front.css', 'all');
         } else {
-            $this->context->controller->addCSS($this->_path.'/views/css/front15.css');
+            $this->context->controller->addCSS($this->_path.'/views/css/front15.css', 'all');
         }
 
         return '';
@@ -1298,9 +1298,9 @@ class MdStripe extends PaymentModule
             Tools::getValue('controller') === 'order') {
             $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
             if (version_compare(_PS_VERSION_, '1.6.0.0', '>=')) {
-                $this->context->controller->addCSS($this->_path.'/views/css/front.css');
+                $this->context->controller->addCSS($this->_path.'/views/css/front.css', 'all');
             } else {
-                $this->context->controller->addCSS($this->_path.'/views/css/front15.css');
+                $this->context->controller->addCSS($this->_path.'/views/css/front15.css', 'all');
             }
         }
     }
