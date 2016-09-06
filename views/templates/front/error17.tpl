@@ -15,6 +15,7 @@
  *  @copyright 2016 Michael Dekker
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
+<!-- mdstripe views/templates/front/error17.tpl -->
 <div>
 	<h3>{l s='An error occurred' mod='mdstripe'}:</h3>
 	<ul class="alert alert-danger">
@@ -26,3 +27,4 @@
 <ul class="footer_links clearfix">
 	<li><a class="btn btn-default button button-small" href="{$orderLink|escape:'html':'UTF-8'}" title="{l s='Back to your shopping cart' mod='mdstripe'}"><span><i class="icon-chevron-left"></i> {l s='Back to your shopping cart' mod='mdstripe'}</span></a></li>
 </ul>
+<!-- /mdstripe views/templates/front/error17.tpl -->

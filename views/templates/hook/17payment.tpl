@@ -15,6 +15,7 @@
  *  @copyright 2016 Michael Dekker
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
+<!-- mdstripe views/templates/hook/17payment.tpl -->
 <div class="row">
 	<form id="stripe-form" action="{$stripe_confirmation_page|escape:'htmlall':'UTF-8'}" method="POST">
 		<input type="hidden" name="id_cart" value="{$id_cart|escape:'htmlall':'UTF-8'}">
@@ -24,7 +25,7 @@
 	</a>
 	<script type="text/javascript">
 		function openStripeHandler(e) {
-			// Open Checkout with further options:
+			{* Open Checkout with further options: *}
 			handler.open({
 				name: '{$stripe_shopname|escape:'javascript':'UTF-8'}',
 				zipCode: {if $stripe_zipcode}true{else}false{/if},
@@ -46,7 +47,7 @@
 			image: '/img/logo.jpg',
 			locale: '{$stripe_locale|escape:'javascript':'UTF-8'}',
 			token: function (token) {
-				// Insert the token into the form so it gets submitted to the server:
+				{* Insert the token into the form so it gets submitted to the server: *}
 				$stripeinput = $('input[name=mdstripe-token]');
 				$stripeinput.val(token.id);
 
@@ -60,3 +61,4 @@
 		$('#mdstripe_payment_link').click(openStripeHandler);
 	</script>
 </div>
+<!-- /mdstripe views/templates/hook/17payment.tpl -->

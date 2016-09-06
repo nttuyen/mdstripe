@@ -21,6 +21,8 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+require_once dirname(__FILE__).'/../vendor/autoload.php';
+
 /**
  * Class MdStripeObjectModel
  */
@@ -47,11 +49,11 @@ class MdStripeObjectModel extends ObjectModel
                 continue;
             }
             $sql .= $fieldName.' '.$field['db_type'];
-            if (isset($field['required']) && $field['required']) {
+            if (isset($field['required'])) {
                 $sql .= ' NOT NULL';
             }
             if (isset($field['default'])) {
-                $sql .= ' DEFAULT "'.$field['default'].'"';
+                $sql .= ' DEFAULT \''.$field['default'].'\'';
             }
             $sql .= ',';
         }
@@ -140,15 +142,15 @@ class MdStripeObjectModel extends ObjectModel
 
         $definition = self::getDefinition($className);
         $sql = 'ALTER TABLE `'._DB_PREFIX_.bqSQL($definition['table']).'`';
-        $sql .= ' ADD COLUMN `'.bqSQL($name).'` `'.bqSQL($columnDefinition['db_type']).'`';
+        $sql .= ' ADD COLUMN `'.bqSQL($name).'` '.bqSQL($columnDefinition['db_type']).'';
         if ($name === $definition['primary']) {
             $sql .= ' INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT';
         } else {
-            if (isset($field['required']) && $field['required']) {
+            if (isset($columnDefinition['required']) && $columnDefinition['required']) {
                 $sql .= ' NOT NULL';
             }
-            if (isset($field['default'])) {
-                $sql .= ' DEFAULT "'.pSQL($field['default']).'"';
+            if (isset($columnDefinition['default'])) {
+                $sql .= ' DEFAULT "'.pSQL($columnDefinition['default']).'"';
             }
         }
 

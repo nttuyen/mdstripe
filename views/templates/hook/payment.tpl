@@ -15,6 +15,7 @@
  *  @copyright 2016 Michael Dekker
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
+<!-- mdstripe views/templates/hook/payment.tpl -->
 {if $smarty.const._PS_VERSION_|@addcslashes:'\'' < '1.6'}
 	<form id="stripe-form" action="{$stripe_confirmation_page|escape:'htmlall':'UTF-8'}" method="POST">
 		<input type="hidden" name="mdstripe-id_cart" value="{$id_cart|escape:'htmlall':'UTF-8'}">
@@ -58,16 +59,16 @@
 		locale: 'auto',
 		token: function (token) {
 			var $form = $('#stripe-form');
-			// Insert the token into the form so it gets submitted to the server:
+			{* Insert the token into the form so it gets submitted to the server: *}
 			$form.append($('<input type="hidden" name="mdstripe-token" />').val(token.id));
 
-			// Submit the form:
+			{* Submit the form: *}
 			$form.get(0).submit();
 		}
 	});
 
 	$('#mdstripe_payment_link').on('click', function(e) {
-		// Open Checkout with further options:
+		{* Open Checkout with further options: *}
 		handler.open({
 			name: '{$stripe_shopname|escape:'javascript':'UTF-8'}',
 			zipCode: {if $stripe_zipcode}true{else}false{/if},
@@ -82,3 +83,4 @@
 		e.preventDefault();
 	});
 </script>
+<!-- /mdstripe views/templates/hook/payment.tpl -->

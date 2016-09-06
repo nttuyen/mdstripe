@@ -156,12 +156,12 @@ class MdStripe extends PaymentModule
     {
         $this->makeModuleTrusted();
         if (extension_loaded('curl') == false) {
-            $this->errors[] = $this->l('You have to enable the cURL extension on your server to install this module');
+            $this->addError($this->l('You have to enable the cURL extension on your server to install this module'));
 
             return false;
         }
         if (PHP_VERSION_ID < self::MIN_PHP_VERSION) {
-            $this->errors[] = $this->l('Your PHP version is not supported. Please upgrade to PHP 5.4 or higher.');
+            $this->addError($this->l('Your PHP version is not supported. Please upgrade to PHP 5.4 or higher.'));
 
             return false;
         }
@@ -1047,6 +1047,7 @@ class MdStripe extends PaymentModule
             $stripeAmount = (int) ($stripeAmount * 100);
         }
 
+        $autoplay = true;
         $this->context->smarty->assign(array(
             'stripe_email' => $stripeEmail,
             'stripe_currency' => $currency->iso_code,
@@ -1064,6 +1065,7 @@ class MdStripe extends PaymentModule
             'stripeShopThumb' => str_replace('http://', 'https://', $this->context->link->getMediaLink('/modules/mdstripe/views/img/shop'.$this->getShopId().'.jpg')),
             'stripe_collect_billing' => Configuration::get(self::COLLECT_BILLING),
             'stripe_collect_shipping' => Configuration::get(self::COLLECT_SHIPPING),
+            'autoplay' => $autoplay,
         ));
 
         if (Module::isEnabled('onepagecheckoutps')) {
@@ -1295,7 +1297,8 @@ class MdStripe extends PaymentModule
         if (Tools::getValue('module') === 'onepagecheckoutps' ||
             Tools::getValue('controller') === 'order-opc' ||
             Tools::getValue('controller') === 'orderopc' ||
-            Tools::getValue('controller') === 'order') {
+            Tools::getValue('controller') === 'order' ||
+            Tools::getValue('controller') === 'supercheckout') {
             $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
             if (version_compare(_PS_VERSION_, '1.6.0.0', '>=')) {
                 $this->context->controller->addCSS($this->_path.'/views/css/front.css', 'all');
@@ -1659,7 +1662,7 @@ class MdStripe extends PaymentModule
                         $helperList->context->cookie->{$prefix.$key} = $value;
                     }
                 } elseif (stripos($key, $helperList->list_id.'Orderway') === 0 && Validate::isOrderWay($value)) {
-                    if ($value === '' || $value == $helperList->_defaultOrderWay) {
+                    if ($value === '') {
                         unset($helperList->context->cookie->{$prefix.$key});
                     } else {
                         $helperList->context->cookie->{$prefix.$key} = $value;
@@ -1712,13 +1715,13 @@ class MdStripe extends PaymentModule
                         $alias = ($definition && !empty($definition['fields'][$filter]['shop'])) ? 'sa' : 'a';
 
                         if ($type == 'int' || $type == 'bool') {
-                            $sqlFilter .= (($checkKey || $key == '`active`') ?  $alias.'.' : '').pSQL($key).' = '.(int)$value.' ';
+                            $sqlFilter .= (($checkKey || $key == '`active`') ?  $alias.'.' : '').pSQL($key).' = '.(int) $value.' ';
                         } elseif ($type == 'decimal') {
-                            $sqlFilter .= ($checkKey ?  $alias.'.' : '').pSQL($key).' = '.(float)$value.' ';
+                            $sqlFilter .= ($checkKey ?  $alias.'.' : '').pSQL($key).' = '.(float) $value.' ';
                         } elseif ($type == 'select') {
                             $sqlFilter .= ($checkKey ?  $alias.'.' : '').pSQL($key).' = \''.pSQL($value).'\' ';
                         } elseif ($type == 'price') {
-                            $value = (float)str_replace(',', '.', $value);
+                            $value = (float) str_replace(',', '.', $value);
                             $sqlFilter .= ($checkKey ?  $alias.'.' : '').pSQL($key).' = '.pSQL(trim($value)).' ';
                         } else {
                             $sqlFilter .= ($checkKey ?  $alias.'.' : '').pSQL($key).' LIKE \'%'.pSQL(trim($value)).'%\' ';

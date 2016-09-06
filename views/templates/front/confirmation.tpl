@@ -15,6 +15,7 @@
  *  @copyright 2016 Michael Dekker
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
+<!-- mdstripe views/templates/front/confirmation.tpl -->
 {if (isset($status) == true) && ($status == 'ok')}
 	<h3>{l s='Your order on %s is complete.' sprintf=[$shop_name] mod='mdstripe'}</h3>
 	<p>
@@ -33,3 +34,4 @@
 	</p>
 {/if}
 <hr />
+<!-- /mdstripe views/templates/front/confirmation.tpl -->
