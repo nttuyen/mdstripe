@@ -17,14 +17,7 @@
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
-spl_autoload_register(
-    function ($className) {
-        if (file_exists(dirname(__FILE__).DIRECTORY_SEPARATOR.$className.'.php')) {
-            require_once $className.'.php';
-
-            return true;
-        }
-
-        return false;
-    }
-);
+function upgrade_module_1_0_12($module)
+{
+    return Db::getInstance()->execute('ALTER IGNORE TABLE `'._DB_PREFIX_.'stripe_transaction `MODIFY `id_charge` VARCHAR(128) NOT NULL');
+}

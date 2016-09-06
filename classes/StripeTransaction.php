@@ -24,7 +24,7 @@ if (!defined('_PS_VERSION_')) {
 /**
  * Class StripeTransaction
  */
-class StripeTransaction extends ObjectModel
+class StripeTransaction extends MdStripeObjectModel
 {
     const TYPE_CHARGE = 1;
     const TYPE_PARTIAL_REFUND = 2;
@@ -63,14 +63,14 @@ class StripeTransaction extends ObjectModel
         'table' => 'stripe_transaction',
         'primary' => 'id_stripe_transaction',
         'fields' => array(
-            'id_order' => array('type' => self::TYPE_INT, 'validate' => 'isUnsignedId', 'required' => true),
-            'type' => array('type' => self::TYPE_INT, 'validate' => 'isUnsignedInt', 'required' => true),
-            'source' => array('type' => self::TYPE_INT, 'validate' => 'isUnsignedInt', 'required' => true),
-            'card_last_digits' => array('type' => self::TYPE_INT, 'validate' => 'isUnsignedInt', 'size' => 4),
-            'id_charge' => array('type' => self::TYPE_STRING, 'validate' => 'isString', 'required' => true),
-            'amount' => array('type' => self::TYPE_INT, 'validate' => 'isInt', 'required' => true),
-            'date_add' => array('type' => self::TYPE_DATE, 'validate' => 'isDate'),
-            'date_upd' => array('type' => self::TYPE_DATE, 'validate' => 'isDate'),
+            'id_order' => array('type' => self::TYPE_INT, 'validate' => 'isUnsignedId', 'required' => true, 'default' => 0, 'db_type' => 'INT(11) UNSIGNED'),
+            'type' => array('type' => self::TYPE_INT, 'validate' => 'isUnsignedInt', 'required' => true, 'default' => 0, 'db_type' => 'INT(11) UNSIGNED'),
+            'source' => array('type' => self::TYPE_INT, 'validate' => 'isUnsignedInt', 'required' => true, 'default' => 0, 'db_type' => 'INT(11) UNSIGNED'),
+            'card_last_digits' => array('type' => self::TYPE_INT, 'validate' => 'isUnsignedInt', 'size' => 4, 'required' => true, 'default' => 0, 'db_type' => 'INT(4) UNSIGNED'),
+            'id_charge' => array('type' => self::TYPE_STRING, 'validate' => 'isString', 'required' => true, 'db_type' => 'VARCHAR(128)'),
+            'amount' => array('type' => self::TYPE_INT, 'validate' => 'isInt', 'required' => true, 'default' => 0, 'db_type' => 'INT(11) UNSIGNED'),
+            'date_add' => array('type' => self::TYPE_DATE, 'validate' => 'isDate', 'db_type' => 'DATETIME'),
+            'date_upd' => array('type' => self::TYPE_DATE, 'validate' => 'isDate', 'db_type' => 'DATETIME'),
         ),
     );
 
