@@ -51,7 +51,7 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
         ));
 
         if ((Tools::isSubmit('mdstripe-id_cart') == false) || (Tools::isSubmit('mdstripe-token') == false)) {
-            $error = $this->module->l('An error occurred. Please contact us for more information.');
+            $error = $this->module->l('An error occurred. Please contact us for more information.', 'validation');
             if (version_compare(_PS_VERSION_, '1.7.0.0', '<')) {
                 $this->errors[] = $error;
                 $this->setTemplate('error.tpl');
@@ -156,7 +156,7 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
                 /**
                  * An error occurred and is shown on a new page.
                  */
-                $error = $this->module->l('An error occurred. Please contact us for more information.');
+                $error = $this->module->l('An error occurred. Please contact us for more information.', 'validation');
                 if (version_compare(_PS_VERSION_, '1.7.0.0', '<')) {
                     $this->errors[] = $error;
                     $this->setTemplate('error.tpl');
@@ -181,7 +181,7 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
         /**
          * An error occurred and is shown on a new page.
          */
-        $error = $this->module->l('An error occurred. Please contact us for more information.');
+        $error = $this->module->l('An error occurred. Please contact us for more information.', 'validation');
         if (version_compare(_PS_VERSION_, '1.7.0.0', '<')) {
             $this->errors[] = $error;
             $this->setTemplate('error.tpl');
