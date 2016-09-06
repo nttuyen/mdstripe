@@ -16,19 +16,19 @@
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *}
 {if (isset($status) == true) && ($status == 'ok')}
-	<h3>{l s='Your order on %s is complete.' sprintf=[$shop_name] mod='mdstripe'}</h3>
+	<h3>{l s='Your order on %s is complete.' sprintf=[$shop_name] mod='mdstripe' d='Modules.MdStripe.confirmation17'}</h3>
 	<p>
 		<br />- {l s='Amount' mod='mdstripe'} : <span class="price"><strong>{$total|escape:'htmlall':'UTF-8'}</strong></span>
 		<br />- {l s='Reference' mod='mdstripe'} : <span class="reference"><strong>{$reference|escape:'html':'UTF-8'}</strong></span>
-		<br /><br />{l s='An email has been sent with this information.' mod='mdstripe'}
-		<br /><br />{l s='If you have questions, comments or concerns, please contact our' mod='mdstripe'} <a href="{$link->getPageLink('contact', true)|escape:'html':'UTF-8'}">{l s='expert customer support team.' mod='mdstripe'}</a>
+		<br /><br />{l s='An email has been sent with this information.' mod='mdstripe'  d='Modules.MdStripe.confirmation17'}
+		<br /><br />{l s='If you have questions, comments or concerns, please contact our' mod='mdstripe'  d='Modules.MdStripe.confirmation17'} <a href="{$link->getPageLink('contact', true)|escape:'html':'UTF-8'}">{l s='expert customer support team.' mod='mdstripe' d='Modules.MdStripe.confirmation17'}</a>
 	</p>
 {else}
-	<h3>{l s='Your order on %s has not been accepted.' sprintf=[$shop_name] mod='mdstripe'}</h3>
+	<h3>{l s='Your order on %s has not been accepted.' sprintf=[$shop_name] mod='mdstripe'  d='Modules.MdStripe.validation'}</h3>
 	<p>
-		<br />- {l s='Reference' mod='mdstripe'} <span class="reference"> <strong>{$reference|escape:'html':'UTF-8'}</strong></span>
-		<br /><br />{l s='Please, try to order again.' mod='mdstripe'}
-		<br /><br />{l s='If you have questions, comments or concerns, please contact our' mod='mdstripe'} <a href="{$link->getPageLink('contact', true)|escape:'html':'UTF-8'}">{l s='expert customer support team.' mod='mdstripe'}</a>
+		<br />- {l s='Reference' mod='mdstripe' d='Modules.MdStripe.confirmation17'} <span class="reference"> <strong>{$reference|escape:'html':'UTF-8'}</strong></span>
+		<br /><br />{l s='Please, try to order again.' mod='mdstripe' d='Modules.MdStripe.confirmation17'}
+		<br /><br />{l s='If you have questions, comments or concerns, please contact our' mod='mdstripe' d='Modules.MdStripe.confirmation17'} <a href="{$link->getPageLink('contact', true)|escape:'html':'UTF-8'}">{l s='expert customer support team.' mod='mdstripe' d='Modules.MdStripe.confirmation17'}</a>
 	</p>
 {/if}
 <hr />

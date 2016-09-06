@@ -1259,7 +1259,8 @@ class MdStripe extends PaymentModule
         if (version_compare(_PS_VERSION_, '1.7.0.0', '<')) {
             return $this->display(__FILE__, 'views/templates/front/confirmation.tpl');
         } else {
-            $this->context->smarty->assign('shop_name', $this->);
+            $this->context->smarty->assign('shop_name', $this->context->shop->name);
+
             return $this->display(__FILE__, 'views/templates/front/confirmation17.tpl');
         }
     }
