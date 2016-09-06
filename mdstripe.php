@@ -1259,8 +1259,7 @@ class MdStripe extends PaymentModule
         if (version_compare(_PS_VERSION_, '1.7.0.0', '<')) {
             return $this->display(__FILE__, 'views/templates/front/confirmation.tpl');
         } else {
-            $this->context->smarty->assign('shop_name', $this->context->shop->name);
-
+            $this->context->smarty->assign('shop_name', $this->);
             return $this->display(__FILE__, 'views/templates/front/confirmation17.tpl');
         }
     }
@@ -1688,7 +1687,6 @@ class MdStripe extends PaymentModule
                         $value = Tools::unSerialize($value);
                     }
                     $key = isset($tmpTab[1]) ? $tmpTab[0].'.`'.$tmpTab[1].'`' : '`'.$tmpTab[0].'`';
-                    $sqlFilter = & $helperList->_filter;
 
                     /* Only for date filtering (from, to) */
                     if (is_array($value)) {
