@@ -1816,7 +1816,7 @@ class MdStripe extends PaymentModule
                 $tags = Composer\Semver\Semver::rsort($tags);
 
                 if (empty($tags)) {
-                    return $this->addConfirmation($this->l('This module is up to date.'));
+                    return $this->addConfirmation($this->l('This module is up to date.'), true);
                 }
 
                 $latestPatch = $tags[0];
@@ -1963,10 +1963,12 @@ class MdStripe extends PaymentModule
      *
      * @param string $message Message
      */
-    protected function addConfirmation($message)
+    protected function addConfirmation($message, $private = false)
     {
         if (!Tools::isSubmit('configure')) {
-            $this->context->controller->confirmations[] = '<a href="'.$this->baseUrl.'">'.$this->displayName.': '.$message.'</a>';
+            if (!$private) {
+                $this->context->controller->confirmations[] = '<a href="'.$this->baseUrl.'">'.$this->displayName.': '.$message.'</a>';
+            }
         } else {
             $this->context->controller->confirmations[] = $message;
         }
