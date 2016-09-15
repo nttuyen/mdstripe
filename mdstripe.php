@@ -32,6 +32,7 @@ class MdStripe extends PaymentModule
 
     const MENU_SETTINGS = 1;
     const MENU_TRANSACTIONS = 2;
+    const MENU_UPDATES = 3;
 
     const ZIPCODE = 'MDSTRIPE_ZIPCODE';
     const COLLECT_BILLING = 'MDSTRIPE_COLLECT_BILLING';
@@ -254,6 +255,8 @@ class MdStripe extends PaymentModule
         switch (Tools::getValue('menu')) {
             case self::MENU_TRANSACTIONS:
                 return $output.$this->renderTransactionsPage();
+            case self::MENU_UPDATES:
+                return $output.$this->renderUpdatePage();
             default:
                 $this->menu = self::MENU_SETTINGS;
 
@@ -283,12 +286,23 @@ class MdStripe extends PaymentModule
                 'active' => false,
                 'icon' => 'icon-credit-card',
             ),
+            self::MENU_UPDATES => array(
+                'short' => $this->l('Update'),
+                'desc' => $this->l('Module updates'),
+                'href' => $this->moduleUrl.'&menu='.self::MENU_UPDATES,
+                'active' => false,
+                'icon' => 'icon-refresh',
+            ),
         );
 
         switch (Tools::getValue('menu')) {
             case self::MENU_TRANSACTIONS:
                 $this->menu = self::MENU_TRANSACTIONS;
                 $menu[self::MENU_TRANSACTIONS]['active'] = true;
+                break;
+            case self::MENU_UPDATES:
+                $this->menu = self::MENU_UPDATES;
+                $menu[self::MENU_UPDATES]['active'] = true;
                 break;
             default:
                 $this->menu = self::MENU_SETTINGS;
@@ -313,15 +327,10 @@ class MdStripe extends PaymentModule
         $this->context->smarty->assign(array(
             'module_url' => $this->moduleUrl.'&menu='.self::MENU_SETTINGS,
             'tls_ok' => (int) Configuration::get(self::TLS_OK),
-            'curentVersion' => $this->version,
-            'latestVersion' => $this->latestVersion,
-            'lastCheck' => $this->lastCheck,
-            'needsUpdate' => $this->needsUpdate,
             'baseUrl' => $this->baseUrl,
         ));
 
         $output .= $this->display(__FILE__, 'views/templates/admin/configure.tpl');
-        $output .= $this->display(__FILE__, 'views/templates/admin/versioncheck.tpl');
         $output .= $this->display(__FILE__, 'views/templates/admin/tlscheck.tpl');
 
         $output .= $this->renderGeneralOptions();
@@ -700,6 +709,31 @@ class MdStripe extends PaymentModule
         $helperList->bulk_actions = false;
 
         return $helperList->generateList($results, $fieldsList);
+    }
+
+    /**
+     * Render the transactions page
+     *
+     * @return string HTML
+     * @throws Exception
+     * @throws SmartyException
+     */
+    protected function renderUpdatePage()
+    {
+        $output = '';
+
+        $this->context->smarty->assign(array(
+            'module_url' => $this->moduleUrl.'&menu='.self::MENU_UPDATES,
+            'curentVersion' => $this->version,
+            'latestVersion' => $this->latestVersion,
+            'lastCheck' => $this->lastCheck,
+            'needsUpdate' => $this->needsUpdate,
+            'baseUrl' => $this->baseUrl,
+        ));
+
+        $output .= $this->display(__FILE__, 'views/templates/admin/versioncheck.tpl');
+
+        return $output;
     }
 
     /**
