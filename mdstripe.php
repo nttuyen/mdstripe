@@ -114,7 +114,7 @@ class MdStripe extends PaymentModule
     {
         $this->name = 'mdstripe';
         $this->tab = 'payments_gateways';
-        $this->version = '1.0.11';
+        $this->version = '1.0.12';
         $this->author = 'Mijn Presta';
         $this->need_instance = 1;
 
