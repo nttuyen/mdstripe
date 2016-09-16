@@ -50,7 +50,7 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
             'orderLink' => $this->context->link->getPageLink($orderProcess, true),
         ));
 
-        if ((Tools::isSubmit('mdstripe-id_cart') == false) || (Tools::isSubmit('mdstripe-token') == false)) {
+        if ((Tools::isSubmit('mdstripe-id_cart') == false) || (Tools::isSubmit('mdstripe-token') == false) || (int) Tools::getValue('mdstripe-id_cart') != $cart->id) {
             $error = $this->module->l('An error occurred. Please contact us for more information.', 'validation');
             if (version_compare(_PS_VERSION_, '1.7.0.0', '<')) {
                 $this->errors[] = $error;
@@ -135,7 +135,7 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
             /**
              * If the order has been validated we try to retrieve it
              */
-            $idOrder = Order::getOrderByCartId((int)$cart->id);
+            $idOrder = Order::getOrderByCartId((int) $cart->id);
 
             if ($idOrder) {
                 // Log transaction

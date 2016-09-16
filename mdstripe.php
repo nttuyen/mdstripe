@@ -62,24 +62,25 @@ class MdStripe extends PaymentModule
     const ENUM_TLS_OK = 1;
     const ENUM_TLS_ERROR = -1;
 
-    const AUTO_UPDATE = true;
+    const AUTO_UPDATE_PATCH = 'MDSTRIPE_AUTO_UPDATE_PATCH';
     const LAST_CHECK = 'MDSTRIPE_LAST_CHECK';
     const LAST_UPDATE = 'MDSTRIPE_LAST_UPDATE';
 
-    const LATEST_VERSION = 'MDSTRIPE_LATEST_VERSION';
-    const DOWNLOAD_URL = 'MDSTRIPE_DOWNLOAD_URL';
+    const LATEST_PATCH = 'MDSTRIPE_LATEST_PATCH';
+    const LATEST_MINOR = 'MDSTRIPE_LATEST_MINOR';
+    const LATEST_MAJOR = 'MDSTRIPE_LATEST_MAJOR';
     const CHECK_INTERVAL = 86400;
     const UPDATE_INTERVAL = 60;
+
+    const TYPE_PATCH = 1;
+    const TYPE_MINOR = 2;
+    const TYPE_MAJOR = 3;
 
     const GITHUB_USER = 'firstred';
     const GITHUB_REPO = 'mdstripe';
 
     /** @var string $baseUrl Module base URL */
     public $baseUrl;
-    public $latestVersion;
-    public $lastCheck;
-    public $downloadUrl;
-    public $needsUpdate;
 
     public $moduleUrl;
 
@@ -143,7 +144,7 @@ class MdStripe extends PaymentModule
 
                 return;
             }
-            $this->lastCheck = Configuration::get(self::LAST_CHECK);
+
             $this->checkUpdate();
         }
     }
@@ -179,7 +180,9 @@ class MdStripe extends PaymentModule
 
         require_once dirname(__FILE__).'/sql/install.php';
 
-        Configuration::updateGlobalValue(self::LATEST_VERSION, '0.0.0');
+        Configuration::updateGlobalValue(self::LATEST_PATCH, '0.0.0');
+        Configuration::updateGlobalValue(self::LATEST_MINOR, '0.0.0');
+        Configuration::updateGlobalValue(self::LATEST_MAJOR, '0.0.0');
         Configuration::updateGlobalValue(self::STATUS_VALIDATED, Configuration::get('PS_OS_PAYMENT'));
         Configuration::updateGlobalValue(self::USE_STATUS_REFUND, true);
         Configuration::updateGlobalValue(self::STATUS_REFUND, Configuration::get('PS_OS_REFUND'));
@@ -214,7 +217,9 @@ class MdStripe extends PaymentModule
         Configuration::deleteByName(self::SHOW_PAYMENT_LOGOS);
 
         Configuration::deleteByName(self::LAST_CHECK);
-        Configuration::deleteByName(self::LATEST_VERSION);
+        Configuration::deleteByName(self::LATEST_PATCH);
+        Configuration::deleteByName(self::LATEST_MINOR);
+        Configuration::deleteByName(self::LATEST_MAJOR);
         Configuration::deleteByName(self::DOWNLOAD_URL);
 
         return parent::uninstall();
@@ -722,12 +727,22 @@ class MdStripe extends PaymentModule
     {
         $output = '';
 
+        $latestPatch = Configuration::get(self::LATEST_PATCH);
+        $latestMinor = Configuration::get(self::LATEST_MINOR);
+        $latestMajor = Configuration::get(self::LATEST_MAJOR);
+
+        $latestVersion = max($latestPatch, $latestMinor, $latestMajor);
+
         $this->context->smarty->assign(array(
             'module_url' => $this->moduleUrl.'&menu='.self::MENU_UPDATES,
-            'curentVersion' => $this->version,
-            'latestVersion' => $this->latestVersion,
-            'lastCheck' => $this->lastCheck,
-            'needsUpdate' => $this->needsUpdate,
+            'currentVersion' => $this->version,
+            'latestPatch' => $latestPatch,
+            'latestMinor' => $latestMinor,
+            'latestMajor' => $latestMajor,
+            'needsPatchUpdate' => version_compare($latestPatch, $this->version, '>'),
+            'needsMinorUpdate' => version_compare($latestMinor, $this->version, '>'),
+            'needsMajorUpdate' => version_compare($latestMajor, $this->version, '>'),
+            'latestVersion' => $latestVersion,
             'baseUrl' => $this->baseUrl,
         ));
 
@@ -753,6 +768,16 @@ class MdStripe extends PaymentModule
 
             if (Tools::isSubmit('checktls') && (bool) Tools::getValue('checktls')) {
                 $output .= $this->tlsCheck();
+            }
+        } elseif ($this->menu == self::MENU_UPDATES) {
+            if (Tools::isSubmit('mdstripeApplyPatchUpdate')) {
+                $this->updateToLatestVersion(self::TYPE_PATCH);
+            }
+            if (Tools::isSubmit('mdstripeApplyMinorUpdate')) {
+                $this->updateToLatestVersion(self::TYPE_MINOR);
+            }
+            if (Tools::isSubmit('mdstripeApplyMajorUpdate')) {
+                $this->updateToLatestVersion(self::TYPE_MAJOR);
             }
         }
     }
@@ -1826,59 +1851,100 @@ class MdStripe extends PaymentModule
     protected function checkUpdate()
     {
         $lastCheck = (int) Configuration::get(self::LAST_CHECK);
-        $lastUpdate = (int) Configuration::get(self::LAST_UPDATE);
         if ($lastCheck < (time() - self::CHECK_INTERVAL) || Tools::getValue($this->name.'CheckUpdate')) {
-            $this->lastCheck = time();
             Configuration::updateGlobalValue(self::LAST_CHECK, time());
             // Initialize GitHub Client
             $client = new \Github\Client(
                 new \Github\HttpClient\CachedHttpClient(array('cache_dir' => '/tmp/github-api-cache'))
             );
 
+            list($currentMajor, $currentMinor, $currentPatch) = explode('.', $this->version);
+
             // Check the release tag
             try {
                 $releases = $client->api('repo')->releases()->all(self::GITHUB_USER, self::GITHUB_REPO);
-                $tags = array();
+                $latestPatches = array();
+                $latestMinors = array();
+                $latestMajors = array();
                 foreach ($releases as $release) {
                     if (isset($release['tag_name']) &&
                         version_compare($release['tag_name'], $this->version, '>') &&
                         Composer\Semver\Semver::satisfies($release['tag_name'], '~'.$this->version)) {
-                        $tags[] = $release['tag_name'];
+                        $latestPatches[] = $release['tag_name'];
+                    }
+                    if (isset($release['tag_name']) &&
+                        version_compare($release['tag_name'], $this->version, '>') &&
+                        Composer\Semver\Semver::satisfies($release['tag_name'], '^'.$this->version)) {
+                        $latestPatches[] = $release['tag_name'];
+                    }
+                    if (isset($release['tag_name']) &&
+                        version_compare($release['tag_name'], $currentMajor.'.999.999', '>')) {
+                        $latestMajors[] = $release['tag_name'];
                     }
                 }
                 // Sort version in descending order
-                $tags = Composer\Semver\Semver::rsort($tags);
+                $latestPatches = Composer\Semver\Semver::rsort($latestPatches);
+                $latestMinors = Composer\Semver\Semver::rsort($latestMinors);
+                $latestMajors = Composer\Semver\Semver::rsort($latestMajors);
 
-                if (empty($tags)) {
+                if (empty($latestMajors) && empty($latestMinors) && empty($latestPatches)) {
                     return $this->addConfirmation($this->l('This module is up to date.'), true);
                 }
 
-                $latestPatch = $tags[0];
-                $latestRelease = $client->api('repo')->releases()->all(self::GITHUB_USER, self::GITHUB_REPO, $latestPatch);
-
-                if (!empty($latestRelease)) {
-                    $latestRelease = $latestRelease[0];
-                    if ($latestPatch && isset($latestRelease['assets'][0]['browser_download_url'])) {
-                        Configuration::updateGlobalValue(self::LATEST_VERSION, $latestRelease['tag_name']);
-                        Configuration::updateGlobalValue(self::DOWNLOAD_URL, $latestRelease['assets'][0]['browser_download_url']);
-                        $this->latestVersion = $latestPatch;
-                        $this->downloadUrl = $latestRelease['assets'][0]['browser_download_url'];
+                if (!empty($latestPatches)) {
+                    $latestPatch = $latestPatches[0];
+                    if ($latestPatch) {
+                        Configuration::updateGlobalValue(self::LATEST_PATCH, $latestPatch);
+                        if (Configuration::get(self::AUTO_UPDATE_PATCH)) {
+                            $this->updateToLatestVersion(self::TYPE_PATCH);
+                        }
+                    }
+                }
+                if (!empty($latestMinors)) {
+                    $latestMinor = $latestMinors[0];
+                    if ($latestMinor) {
+                        Configuration::updateGlobalValue(self::LATEST_MINOR, $latestMinor);
+                    }
+                }
+                if (!empty($latestMajors)) {
+                    $latestMajor = $latestMajors[0];
+                    if ($latestMajor) {
+                        Configuration::updateGlobalValue(self::LATEST_MAJOR, $latestMajor);
                     }
                 }
             } catch (Exception $e) {
                 $this->addWarning($e->getMessage());
             }
-        } else {
-            $this->latestVersion = Configuration::get(self::LATEST_VERSION);
-            $this->downloadUrl = Configuration::get(self::DOWNLOAD_URL);
         }
-        $this->needsUpdate = version_compare($this->version, $this->latestVersion, '<');
-        if ($this->needsUpdate &&
-            (self::AUTO_UPDATE && $lastUpdate < (time() - self::UPDATE_INTERVAL) || Tools::getValue($this->name.'ApplyUpdate'))
-        ) {
+    }
+
+    /**
+     * Update module to latest version
+     *
+     * @param int $type Update type (PATCH, MINOR, MAJOR)
+     *
+     * @return bool Indicates whether the update was successful
+     */
+    protected function updateToLatestVersion($type)
+    {
+        switch ($type) {
+            case self::TYPE_MAJOR:
+                $latestVersion = Configuration::get(self::LATEST_MAJOR);
+                break;
+            case self::TYPE_MINOR:
+                $latestVersion = Configuration::get(self::LATEST_MINOR);
+                break;
+            case self::TYPE_PATCH:
+                $latestVersion = Configuration::get(self::LATEST_PATCH);
+                break;
+            default:
+                return false;
+        }
+
+        if (version_compare($latestVersion, $this->version, '>')) {
             $zipLocation = _PS_MODULE_DIR_.$this->name.'.zip';
             if (@!file_exists($zipLocation)) {
-                file_put_contents($zipLocation, fopen($this->downloadUrl, 'r'));
+                file_put_contents($zipLocation, fopen('https://github.com/'.self::GITHUB_USER.'/'.self::GITHUB_REPO.'/releases/download/'.$latestVersion.'/v'.$latestVersion.'-'.$this->name.'.zip', 'r'));
             }
             if (@file_exists($zipLocation)) {
                 $this->extractArchive($zipLocation);
@@ -1887,7 +1953,10 @@ class MdStripe extends PaymentModule
                 Configuration::updateGlobalValue(self::LAST_CHECK, 0);
             }
         }
+
+        return true;
     }
+
 
     /**
      * Check currency
@@ -1982,11 +2051,14 @@ class MdStripe extends PaymentModule
      * Add information message
      *
      * @param string $message Message
+     * @param bool   $private
      */
-    protected function addInformation($message)
+    protected function addInformation($message, $private = false)
     {
         if (!Tools::isSubmit('configure')) {
-            $this->context->controller->informations[] = '<a href="'.$this->baseUrl.'">'.$this->displayName.': '.$message.'</a>';
+            if (!$private) {
+                $this->context->controller->informations[] = '<a href="'.$this->baseUrl.'">'.$this->displayName.': '.$message.'</a>';
+            }
         } else {
             $this->context->controller->informations[] = $message;
         }
@@ -1996,6 +2068,7 @@ class MdStripe extends PaymentModule
      * Add confirmation message
      *
      * @param string $message Message
+     * @param bool   $private
      */
     protected function addConfirmation($message, $private = false)
     {
@@ -2012,11 +2085,14 @@ class MdStripe extends PaymentModule
      * Add warning message
      *
      * @param string $message Message
+     * @param bool   $private
      */
-    protected function addWarning($message)
+    protected function addWarning($message, $private = false)
     {
         if (!Tools::isSubmit('configure')) {
-            $this->context->controller->warnings[] = '<a href="'.$this->baseUrl.'">'.$this->displayName.': '.$message.'</a>';
+            if (!$private) {
+                $this->context->controller->warnings[] = '<a href="'.$this->baseUrl.'">'.$this->displayName.': '.$message.'</a>';
+            }
         } else {
             $this->context->controller->warnings[] = $message;
         }
@@ -2027,10 +2103,12 @@ class MdStripe extends PaymentModule
      *
      * @param string $message Message
      */
-    protected function addError($message)
+    protected function addError($message, $private = false)
     {
         if (!Tools::isSubmit('configure')) {
-            $this->context->controller->errors[] = '<a href="'.$this->baseUrl.'">'.$this->displayName.': '.$message.'</a>';
+            if (!$private) {
+                $this->context->controller->errors[] = '<a href="'.$this->baseUrl.'">'.$this->displayName.': '.$message.'</a>';
+            }
         } else {
             // Do not add error in this case
             // It will break execution of AdminController

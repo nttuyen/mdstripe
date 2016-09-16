@@ -21,7 +21,7 @@
 		<p>
 			<strong>{l s='Check if this module needs updates' mod='mdstripe'}</strong><br />
 		</p>
-		{if $needsUpdate}
+		{if isset($needsPatchUpdate) && $needsPatchUpdate || isset($needsMinorUpdate) && $needsMinorUpdate || isset($needsMajorUpdate) && $needsMajorUpdate}
 			<div class="warn">
 				{l s='This module needs to be updated to version %s' mod='mdstripe' sprintf=[$latestVersion]}
 			</div>
@@ -31,9 +31,21 @@
 			</div>
 		{/if}
 		<br />
-		<a class="button" href="{$baseUrl}&mdstripeCheckUpdate=1"><i class="icon icon-search"></i> {l s='Check for updates' mod='mdstripe'}</a>
-		{if $needsUpdate}
-			<a class="button" href="{$baseUrl}&mdstripeApplyUpdate=1"><i class="icon icon-refresh"></i> {l s='Update module' mod='mdstripe'}</a>
+		<a class="button" href="{$module_url}&mdstripeCheckUpdate=1"><i class="icon icon-search"></i> {l s='Check for updates' mod='mdstripe'}</a>
+		{if isset($needsPatchUpdate) && $needsPatchUpdate}
+			<br />
+			<br />
+			<a class="button clear" href="{$module_url|escape:'htmlall':'UTF-8'}&mdstripeApplyPatchUpdate=1"><i class="icon icon-refresh"></i> {l s='Update module to the latest PATCH version' mod='mdstripe'}</a>
+		{/if}
+		{if isset($needsMinorUpdate) && $needsMinorUpdate}
+			<br />
+			<br />
+			<a class="button clear" href="{$module_url|escape:'htmlall':'UTF-8'}&mdstripeApplyMinorUpdate=1"><i class="icon icon-refresh"></i> {l s='Update module to the latest MINOR version' mod='mdstripe'}</a>
+		{/if}
+		{if isset($needsMajorUpdate) && $needsMajorUpdate}
+			<br />
+			<br />
+			<a class="button clear" href="{$module_url|escape:'htmlall':'UTF-8'}&mdstripeApplyMajorUpdate=1"><i class="icon icon-refresh"></i> {l s='Update module to the latest MAJOR version' mod='mdstripe'}</a>
 		{/if}
 	</fieldset>
 	<br />
@@ -43,7 +55,7 @@
 		<p>
 			<strong>{l s='Check if this module needs updates' mod='mdstripe'}</strong><br />
 		</p>
-		{if $needsUpdate}
+		{if isset($needsPatchUpdate) && $needsPatchUpdate || isset($needsMinorUpdate) && $needsMinorUpdate || isset($needsMajorUpdate) && $needsMajorUpdate}
 			<div class="alert alert-warning">
 				{l s='This module needs to be updated to version %s' mod='mdstripe' sprintf=[$latestVersion]}
 			</div>
@@ -52,9 +64,21 @@
 				{l s='This module is up to date.' mod='mdstripe'}
 			</div>
 		{/if}
-		<a class="btn btn-default" href="{$baseUrl}&mdstripeCheckUpdate=1"><i class="icon icon-search"></i> {l s='Check for updates' mod='mdstripe'}</a>
-		{if $needsUpdate}
-			<a class="btn btn-default" href="{$baseUrl}&mdstripeApplyUpdate=1"><i class="icon icon-refresh"></i> {l s='Update module' mod='mdstripe'}</a>
+		<a class="btn btn-default" href="{$module_url}&mdstripeCheckUpdate=1"><i class="icon icon-search"></i> {l s='Check for updates' mod='mdstripe'}</a>
+		{if isset($needsPatchUpdate) && $needsPatchUpdate}
+			<br />
+			<br />
+			<a class="btn btn-default clearfix" href="{$module_url|escape:'htmlall':'UTF-8'}&mdstripeApplyPatchUpdate=1"><i class="icon icon-refresh"></i> {l s='Update module to the latest PATCH version' mod='mdstripe'}</a>
+		{/if}
+		{if isset($needsMinorUpdate) && $needsMinorUpdate}
+			<br />
+			<br />
+			<a class="btn btn-default clearfix" href="{$module_url|escape:'htmlall':'UTF-8'}&mdstripeApplyMinorUpdate=1"><i class="icon icon-refresh"></i> {l s='Update module to the latest MINOR version' mod='mdstripe'}</a>
+		{/if}
+		{if isset($needsMajorUpdate) && $needsMajorUpdate}
+			<br />
+			<br />
+			<a class="btn btn-default clearfix" href="{$module_url|escape:'htmlall':'UTF-8'}&mdstripeApplyMajorUpdate=1"><i class="icon icon-refresh"></i> {l s='Update module to the latest MAJOR version' mod='mdstripe'}</a>
 		{/if}
 	</div>
 {/if}
