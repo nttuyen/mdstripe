@@ -90,9 +90,6 @@ class MdStripe extends PaymentModule
     public static $zeroDecimalCurrencies =
         array('bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga', 'pyg', 'rwf', 'vdn', 'vuv', 'xaf', 'xof', 'xpf');
 
-    /** @var int $menu Current menu */
-    public $menu;
-
     /** @var array Hooks */
     public $hooks = array(
         'displayHeader',
@@ -101,9 +98,11 @@ class MdStripe extends PaymentModule
         'displayPaymentEU',
         'paymentOptions',
         'paymentReturn',
-        'displayPaymentTop',
         'displayAdminOrder',
     );
+
+    /** @var int $menu Current menu */
+    public $menu;
 
     /**
      * MDStripe constructor.
@@ -1081,16 +1080,21 @@ class MdStripe extends PaymentModule
             $stripeAmount = (int) ($stripeAmount * 100);
         }
 
+        $invoiceAddress = new Address((int) $cart->id_address_invoice);
+
         $autoplay = true;
         $this->context->smarty->assign(array(
+            'stripe_name' => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
             'stripe_email' => $stripeEmail,
             'stripe_currency' => $currency->iso_code,
             'stripe_amount' => $stripeAmount,
+            'stripe_amount_formatted' => Tools::displayPrice($cart->getOrderTotal(), Currency::getCurrencyInstance($cart->id_currency)),
             'id_cart' => (int) $cart->id,
             'stripe_secret_key' => Configuration::get(self::SECRET_KEY),
             'stripe_publishable_key' => Configuration::get(self::PUBLISHABLE_KEY),
             'stripe_locale' => self::getStripeLanguage($this->context->language->language_code),
             'stripe_zipcode' => (bool) Configuration::get(self::ZIPCODE),
+            'stripecc_zipcode' => (bool) Configuration::get(self::ZIPCODE),
             'stripe_bitcoin' => (bool) Configuration::get(self::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
             'stripe_alipay' => (bool) Configuration::get(self::ALIPAY),
             'stripe_shopname' => $this->context->shop->name,
@@ -1106,7 +1110,8 @@ class MdStripe extends PaymentModule
             return $this->display(__FILE__, 'views/templates/front/eupayment.tpl');
         }
 
-        return $this->display(__FILE__, 'views/templates/hook/payment.tpl');
+        return $this->display(__FILE__, 'views/templates/hook/payment.tpl')
+        .$this->display(__FILE__, 'views/templates/hook/ccpayment.tpl');
     }
 
     /**
@@ -1222,7 +1227,10 @@ class MdStripe extends PaymentModule
             $stripeAmount = (int) ($stripeAmount * 100);
         }
 
+        $invoiceAddress = new Address((int) $cart->id_address_invoice);
+
         $this->context->smarty->assign(array(
+            'stripe_name' => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
             'stripe_email' => $stripeEmail,
             'stripe_currency' => $currency->iso_code,
             'stripe_amount' => $stripeAmount,
@@ -1231,6 +1239,7 @@ class MdStripe extends PaymentModule
             'stripe_publishable_key' => Configuration::get(self::PUBLISHABLE_KEY),
             'stripe_locale' => self::getStripeLanguage($this->context->language->language_code),
             'stripe_zipcode' => (bool) Configuration::get(self::ZIPCODE),
+            'stripecc_zipcode' => (bool) Configuration::get(self::ZIPCODE),
             'stripe_bitcoin' => (bool) Configuration::get(self::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
             'stripe_alipay' => (bool) Configuration::get(self::ALIPAY),
             'stripe_shopname' => $this->context->shop->name,
@@ -1307,39 +1316,21 @@ class MdStripe extends PaymentModule
      * @param array $params Hook parameters
      * @return string Hook HTML
      */
-    public function hookDisplayPaymentTop($params)
+    public function hookDisplayHeader($params)
     {
+        $this->context->controller->addJS($this->_path.'views/js/jquery.card.js');
         $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
+        $this->context->controller->addJS('https://js.stripe.com/v2/');
+        $this->context->controller->addCSS($this->_path.'views/css/mdstripe-bootstrap.css', 'all');
+        $this->context->controller->addCSS($this->_path.'views/css/creditcard-embedded.css', 'all');
+        $this->context->controller->addCSS($this->_path.'views/css/simplespinner.css', 'all');
         if (version_compare(_PS_VERSION_, '1.6.0.0', '>=')) {
-            $this->context->controller->addCSS($this->_path.'/views/css/front.css', 'all');
+            $this->context->controller->addCSS($this->_path.'views/css/front.css', 'all');
         } else {
-            $this->context->controller->addCSS($this->_path.'/views/css/front15.css', 'all');
+            $this->context->controller->addCSS($this->_path.'views/css/front15.css', 'all');
         }
 
         return '';
-    }
-
-    /**
-     * Hook to header: <head></head>
-     *
-     * @param array $params Hook parameters
-     */
-    public function hookHeader($params)
-    {
-        $this->makeModuleTrusted();
-
-        if (Tools::getValue('module') === 'onepagecheckoutps' ||
-            Tools::getValue('controller') === 'order-opc' ||
-            Tools::getValue('controller') === 'orderopc' ||
-            Tools::getValue('controller') === 'order' ||
-            Tools::getValue('controller') === 'supercheckout') {
-            $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
-            if (version_compare(_PS_VERSION_, '1.6.0.0', '>=')) {
-                $this->context->controller->addCSS($this->_path.'/views/css/front.css', 'all');
-            } else {
-                $this->context->controller->addCSS($this->_path.'/views/css/front15.css', 'all');
-            }
-        }
     }
 
     /**
@@ -1395,6 +1386,42 @@ class MdStripe extends PaymentModule
         }
 
         return '';
+    }
+
+    /**
+     * Hook after module install
+     *
+     * @param Module $module
+     *
+     * @return void
+     */
+    public function hookActionModuleInstallAfter($module)
+    {
+        if (!isset($module->name) || empty($module->name)) {
+            return;
+        }
+
+        $hookHeaderId = (int) Hook::getIdByName('displayHeader');
+        $modulesWithControllers = Dispatcher::getModuleControllers('front');
+
+        if (isset($modulesWithControllers[$module->name])) {
+            foreach (Shop::getShops() as $shop) {
+                foreach ($modulesWithControllers[$module->name] as $cont) {
+                    Db::getInstance()->insert(
+                        'hook_module_exceptions',
+                        array(
+                            'id_module' => (int) $this->id,
+                            'id_hook' => (int) $hookHeaderId,
+                            'id_shop' => (int) $shop['id_shop'],
+                            'file_name' => pSQL($cont),
+                        ),
+                        false,
+                        true,
+                        Db::INSERT_IGNORE
+                    );
+                }
+            }
+        }
     }
 
     /**
