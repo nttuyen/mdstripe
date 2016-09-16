@@ -25,5 +25,5 @@ function upgrade_module_1_0_12($module)
     Configuration::updateGlobalValue('MDSTRIPE_LATEST_MAJOR', '0.0.0');
     Configuration::updateGlobalValue('MDSTRIPE_AUTO_UPDATE_PATCH', true);
 
-    return Db::getInstance()->execute('ALTER IGNORE TABLE `'._DB_PREFIX_.'stripe_transaction `MODIFY `id_charge` VARCHAR(128) NOT NULL');
+    return Db::getInstance()->execute('ALTER IGNORE TABLE `'._DB_PREFIX_.'stripe_transaction` MODIFY `id_charge` VARCHAR(128) NOT NULL');
 }
