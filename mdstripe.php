@@ -55,6 +55,7 @@ class MdStripe extends PaymentModule
     const SHOW_PAYMENT_LOGOS = 'MDSTRIPE_PAYMENT_LOGOS';
 
     const OPTIONS_MODULE_SETTINGS = 1;
+    const OPTIONS_UPDATE_SETTINGS = 2;
 
     const TLS_OK = 'MDSTRIPE_TLS_OK';
     const TLS_LAST_CHECK = 'MDSTRIPE_TLS_LAST_CHECK';
@@ -189,6 +190,7 @@ class MdStripe extends PaymentModule
         Configuration::updateGlobalValue(self::USE_STATUS_PARTIAL_REFUND, false);
         Configuration::updateGlobalValue(self::STATUS_PARTIAL_REFUND, Configuration::get('PS_OS_REFUND'));
         Configuration::updateGlobalValue(self::GENERATE_CREDIT_SLIP, true);
+        Configuration::updateGlobalValue(self::AUTO_UPDATE_PATCH, true);
 
         return true;
     }
@@ -220,7 +222,7 @@ class MdStripe extends PaymentModule
         Configuration::deleteByName(self::LATEST_PATCH);
         Configuration::deleteByName(self::LATEST_MINOR);
         Configuration::deleteByName(self::LATEST_MAJOR);
-        Configuration::deleteByName(self::DOWNLOAD_URL);
+        Configuration::deleteByName(self::AUTO_UPDATE_PATCH);
 
         return parent::uninstall();
     }
@@ -746,10 +748,62 @@ class MdStripe extends PaymentModule
             'baseUrl' => $this->baseUrl,
         ));
 
+        $output .= $this->renderAutoUpdateOptions();
         $output .= $this->display(__FILE__, 'views/templates/admin/versioncheck.tpl');
+        $output .= $this->display(__FILE__, 'views/templates/admin/donate.tpl');
 
         return $output;
     }
+
+    /**
+     * Render the Auto update options form
+     *
+     * @return string HTML
+     */
+    protected function renderAutoUpdateOptions()
+    {
+        $helper = new HelperOptions();
+        $helper->id = self::OPTIONS_UPDATE_SETTINGS;
+        $helper->module = $this;
+        $helper->token = Tools::getAdminTokenLite('AdminModules');
+        $helper->currentIndex = $this->moduleUrl.'&menu='.self::MENU_UPDATES;
+        $helper->title = $this->displayName;
+        $helper->table = 'autoupdate';
+        $helper->show_toolbar = false;
+
+        return $helper->generateOptions($this->getAutoUpdateOptions());
+    }
+
+    /**
+     * Get available auto update options
+     *
+     * @return array Auto update options
+     */
+    protected function getAutoUpdateOptions()
+    {
+        return array(
+            'locales' => array(
+                'title' => $this->l('Auto update settings'),
+                'icon' => 'icon-refresh',
+                'fields' => array(
+                    self::AUTO_UPDATE_PATCH => array(
+                        'title' => $this->l('Automatically update to new PATCH versions'),
+                        'desc' => $this->l('This lets the module update automatically to the latest PATCH versions. Updates to MINOR and MAJOR versions should be done manually because those can contain breaking changes. For more info on the version numbering of this module check:').' <a href="http://www.semver.org/" target="_blank">http://www.semver.org/</a>',
+                        'type' => 'bool',
+                        'name' => self::AUTO_UPDATE_PATCH,
+                        'value' => Configuration::get(self::AUTO_UPDATE_PATCH),
+                        'validation' => 'isBool',
+                        'cast' => 'intval',
+                    ),
+                ),
+                'submit' => array(
+                    'title' => $this->l('Save'),
+                    'class' => 'button',
+                ),
+            ),
+        );
+    }
+
 
     /**
      * Save form data.
@@ -762,8 +816,8 @@ class MdStripe extends PaymentModule
             $this->processRefund();
         } elseif ($this->menu == self::MENU_SETTINGS) {
             if (Tools::isSubmit('submitOptionsconfiguration') || Tools::isSubmit('submitOptionsconfiguration')) {
-                $output .= $this->postProcessGeneralOptions();
-                $output .= $this->postProcessOrderOptions();
+                $this->postProcessGeneralOptions();
+                $this->postProcessOrderOptions();
             }
 
             if (Tools::isSubmit('checktls') && (bool) Tools::getValue('checktls')) {
@@ -779,11 +833,16 @@ class MdStripe extends PaymentModule
             if (Tools::isSubmit('mdstripeApplyMajorUpdate')) {
                 $this->updateToLatestVersion(self::TYPE_MAJOR);
             }
+            if (Tools::isSubmit('submitOptionsautoupdate')) {
+                $this->postProcessAutoUpdateOptions();
+            }
         }
     }
 
     /**
      * Process General Options
+     *
+     * @return void
      */
     protected function postProcessGeneralOptions()
     {
@@ -878,6 +937,8 @@ class MdStripe extends PaymentModule
 
     /**
      * Process Order Options
+     *
+     * @return void
      */
     protected function postProcessOrderOptions()
     {
@@ -949,6 +1010,39 @@ class MdStripe extends PaymentModule
             Configuration::updateValue(self::USE_STATUS_PARTIAL_REFUND, $useStatusPartialRefund);
             Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $statusPartialRefund);
             Configuration::updateValue(self::GENERATE_CREDIT_SLIP, $generateCreditSlip);
+        }
+    }
+
+    /**
+     * Process Order Options
+     *
+     * @return void
+     */
+    protected function postProcessAutoUpdateOptions()
+    {
+        $autoUpdatePatch = (bool) Tools::getValue(self::AUTO_UPDATE_PATCH);
+
+        if (Configuration::get('PS_MULTISHOP_FEATURE_ACTIVE')) {
+            if (Shop::getContext() == Shop::CONTEXT_ALL) {
+                $this->updateAllValue(self::AUTO_UPDATE_PATCH, $autoUpdatePatch);
+            } elseif (is_array(Tools::getValue('multishopOverrideOption'))) {
+                $idShopGroup = (int) Shop::getGroupFromShop($this->getShopId(), true);
+                $multishopOverride = Tools::getValue('multishopOverrideOption');
+                if (Shop::getContext() == Shop::CONTEXT_GROUP) {
+                    foreach (Shop::getShops(false, $this->getShopId()) as $idShop) {
+                        if (isset($multishopOverride[self::AUTO_UPDATE_PATCH]) && $multishopOverride[self::AUTO_UPDATE_PATCH]) {
+                            Configuration::updateValue(self::AUTO_UPDATE_PATCH, $autoUpdatePatch, false, $idShopGroup, $idShop);
+                        }
+                    }
+                } else {
+                    $idShop = (int) $this->getShopId();
+                    if (isset($multishopOverride[self::AUTO_UPDATE_PATCH]) && $multishopOverride[self::AUTO_UPDATE_PATCH]) {
+                        Configuration::updateValue(self::AUTO_UPDATE_PATCH, $autoUpdatePatch, false, $idShopGroup, $idShop);
+                    }
+                }
+            }
+        } else {
+            Configuration::updateValue(self::AUTO_UPDATE_PATCH, $autoUpdatePatch);
         }
     }
 
