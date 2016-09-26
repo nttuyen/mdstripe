@@ -113,13 +113,13 @@ class MdStripe extends PaymentModule
     {
         $this->name = 'mdstripe';
         $this->tab = 'payments_gateways';
-        $this->version = '1.0.12';
+        $this->version = '1.0.13';
         $this->author = 'Mijn Presta';
         $this->need_instance = 1;
 
         $this->bootstrap = true;
 
-        $this->controllers = array('hook', 'validation');
+        $this->controllers = array('hook', 'validation', 'ajaxvalidation');
 
         $this->is_eu_compatible = 1;
         $this->currencies = true;
@@ -1200,14 +1200,19 @@ class MdStripe extends PaymentModule
         }
 
         $invoiceAddress = new Address((int) $cart->id_address_invoice);
+        $country = new Country($invoiceAddress->id_country);
+        $customer = new Customer($cart->id_customer);
 
         $autoplay = true;
         $this->context->smarty->assign(array(
             'stripe_name' => $invoiceAddress->firstname.' '.$invoiceAddress->lastname,
             'stripe_email' => $stripeEmail,
             'stripe_currency' => $currency->iso_code,
+            'stripe_country' => Tools::strtoupper($country->iso_code),
             'stripe_amount' => $stripeAmount,
+            'stripe_amount_string' => (string) $cart->getOrderTotal(),
             'stripe_amount_formatted' => Tools::displayPrice($cart->getOrderTotal(), Currency::getCurrencyInstance($cart->id_currency)),
+            'apple_pay_image' => Media::getMediaPath($this->_path.'views/img/apple_pay_logo_black.png'),
             'id_cart' => (int) $cart->id,
             'stripe_secret_key' => Configuration::get(self::SECRET_KEY),
             'stripe_publishable_key' => Configuration::get(self::PUBLISHABLE_KEY),
@@ -1217,7 +1222,9 @@ class MdStripe extends PaymentModule
             'stripe_bitcoin' => (bool) Configuration::get(self::BITCOIN) && Tools::strtolower($currency->iso_code) === 'usd',
             'stripe_alipay' => (bool) Configuration::get(self::ALIPAY),
             'stripe_shopname' => $this->context->shop->name,
+            'stripe_ajax_validation' => $link->getModuleLink($this->name, 'ajaxvalidation', array(), Tools::usingSecureMode()),
             'stripe_confirmation_page' => $link->getModuleLink($this->name, 'validation', array(), Tools::usingSecureMode()),
+            'stripe_ajax_confirmation_page' => $link->getPageLink('index.php?controller=order-confirmation&id_cart='.$cart->id.'&id_module='.$this->id.'&key='.$customer->secure_key),
             'showPaymentLogos' => Configuration::get(self::SHOW_PAYMENT_LOGOS),
             'stripeShopThumb' => str_replace('http://', 'https://', $this->context->link->getMediaLink('/modules/mdstripe/views/img/shop'.$this->getShopId().'.jpg')),
             'stripe_collect_billing' => Configuration::get(self::COLLECT_BILLING),
