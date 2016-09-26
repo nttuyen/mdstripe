@@ -81,7 +81,7 @@
 										class="form-control"
 										id="stripeCardNumber"
 										placeholder="{l s='Valid Card Number' mod='mdstripe'}"
-										required autofocus
+										required
 								/>
 								<span class="input-group-addon"><i class="customicon-credit-card"></i></span>
 							</div>
