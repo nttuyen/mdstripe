@@ -922,16 +922,16 @@ class MdStripe extends PaymentModule
                     }
                 }
             }
-        } else {
-            Configuration::updateValue(self::SECRET_KEY, $secretKey);
-            Configuration::updateValue(self::PUBLISHABLE_KEY, $publishableKey);
-            Configuration::updateValue(self::ZIPCODE, $zipcode);
-            Configuration::updateValue(self::BITCOIN, $bitcoin);
-            Configuration::updateValue(self::ALIPAY, $alipay);
-            Configuration::updateValue(self::SHOW_PAYMENT_LOGOS, $showPaymentLogos);
-            Configuration::updateValue(self::COLLECT_BILLING, $collectBilling);
-            Configuration::updateValue(self::COLLECT_SHIPPING, $collectShipping);
         }
+
+        Configuration::updateValue(self::SECRET_KEY, $secretKey);
+        Configuration::updateValue(self::PUBLISHABLE_KEY, $publishableKey);
+        Configuration::updateValue(self::ZIPCODE, $zipcode);
+        Configuration::updateValue(self::BITCOIN, $bitcoin);
+        Configuration::updateValue(self::ALIPAY, $alipay);
+        Configuration::updateValue(self::SHOW_PAYMENT_LOGOS, $showPaymentLogos);
+        Configuration::updateValue(self::COLLECT_BILLING, $collectBilling);
+        Configuration::updateValue(self::COLLECT_SHIPPING, $collectShipping);
     }
 
     /**
@@ -1002,14 +1002,14 @@ class MdStripe extends PaymentModule
                     }
                 }
             }
-        } else {
-            Configuration::updateValue(self::STATUS_VALIDATED, $statusValidated);
-            Configuration::updateValue(self::USE_STATUS_REFUND, $useStatusRefund);
-            Configuration::updateValue(self::STATUS_REFUND, $statusRefund);
-            Configuration::updateValue(self::USE_STATUS_PARTIAL_REFUND, $useStatusPartialRefund);
-            Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $statusPartialRefund);
-            Configuration::updateValue(self::GENERATE_CREDIT_SLIP, $generateCreditSlip);
         }
+
+        Configuration::updateValue(self::STATUS_VALIDATED, $statusValidated);
+        Configuration::updateValue(self::USE_STATUS_REFUND, $useStatusRefund);
+        Configuration::updateValue(self::STATUS_REFUND, $statusRefund);
+        Configuration::updateValue(self::USE_STATUS_PARTIAL_REFUND, $useStatusPartialRefund);
+        Configuration::updateValue(self::STATUS_PARTIAL_REFUND, $statusPartialRefund);
+        Configuration::updateValue(self::GENERATE_CREDIT_SLIP, $generateCreditSlip);
     }
 
     /**
@@ -1040,9 +1040,9 @@ class MdStripe extends PaymentModule
                     }
                 }
             }
-        } else {
-            Configuration::updateValue(self::AUTO_UPDATE_PATCH, $autoUpdatePatch);
         }
+
+        Configuration::updateValue(self::AUTO_UPDATE_PATCH, $autoUpdatePatch);
     }
 
     /**
@@ -1236,8 +1236,7 @@ class MdStripe extends PaymentModule
             return $this->display(__FILE__, 'views/templates/front/eupayment.tpl');
         }
 
-        return $this->display(__FILE__, 'views/templates/hook/payment.tpl')
-        .$this->display(__FILE__, 'views/templates/hook/ccpayment.tpl');
+        return $this->display(__FILE__, 'views/templates/hook/payment.tpl').$this->display(__FILE__, 'views/templates/hook/ccpayment.tpl');
     }
 
     /**
