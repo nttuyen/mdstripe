@@ -163,7 +163,7 @@ class MdStripe extends PaymentModule
             return false;
         }
         if (PHP_VERSION_ID < self::MIN_PHP_VERSION) {
-            $this->addError($this->l('Your PHP version is not supported. Please upgrade to PHP 5.4 or higher.'));
+            $this->addError($this->l('Your PHP version is not supported. Please upgrade to PHP 5.3.3 or higher.'));
 
             return false;
         }
