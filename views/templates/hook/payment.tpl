@@ -90,7 +90,7 @@
 
 	#stripe-apple-pay-logo {
 		background-color: black !important;
-		background-image: url('{$apple_pay_image|escape:'htmlall':'UTF-8'}');
+		background-image: url('{$module_dir|escape:'htmlall':'UTF-8'}views/img/apple_pay_logo_black.png');
 		background-position: center;
 		background-size: auto 44px;
 		background-origin: content-box;
@@ -144,7 +144,7 @@
 								});
 
 							}, function(error) {
-								console.err(error.message);
+								console.log(error.message);
 							});
 
 					session.begin();

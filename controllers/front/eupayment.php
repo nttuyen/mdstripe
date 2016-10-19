@@ -25,6 +25,16 @@ require_once dirname(__FILE__).'/../../vendor/autoload.php';
 class MdstripeEupaymentModuleFrontController extends ModuleFrontController
 {
     /**
+     * MdstripeEupaymentModuleFrontController constructor.
+     */
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->ssl = Tools::usingSecureMode();
+    }
+
+    /**
      * @throws PrestaShopException
      */
     public function initContent()

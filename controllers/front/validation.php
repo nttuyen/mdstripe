@@ -28,6 +28,16 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
     public $module;
 
     /**
+     * MdstripeValidationModuleFrontController constructor.
+     */
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->ssl = Tools::usingSecureMode();
+    }
+
+    /**
      * Post process
      *
      * @return bool Whether the info has been successfully processed
@@ -80,7 +90,7 @@ class MdstripeValidationModuleFrontController extends ModuleFrontController
         try {
             $stripeCustomer = \Stripe\Customer::create(array(
                 'email' => $customer->email,
-                'source' => $token
+                'source' => $token,
             ));
         } catch (Exception $e) {
             $error = $e->getMessage();

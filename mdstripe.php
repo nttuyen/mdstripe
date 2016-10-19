@@ -28,7 +28,7 @@ require_once dirname(__FILE__).'/vendor/autoload.php';
  */
 class MdStripe extends PaymentModule
 {
-    const MIN_PHP_VERSION = 50400;
+    const MIN_PHP_VERSION = 50303;
 
     const MENU_SETTINGS = 1;
     const MENU_TRANSACTIONS = 2;
@@ -139,7 +139,7 @@ class MdStripe extends PaymentModule
                 return;
             }
             if (PHP_VERSION_ID < self::MIN_PHP_VERSION) {
-                $this->context->controller->errors[] = $this->displayName.': '.$this->l('Your PHP version is not supported. Please upgrade to PHP 5.4 or higher.');
+                $this->context->controller->errors[] = $this->displayName.': '.$this->l('Your PHP version is not supported. Please upgrade to PHP 5.3.3 or higher.');
                 $this->disable();
 
                 return;
@@ -1212,7 +1212,6 @@ class MdStripe extends PaymentModule
             'stripe_amount' => $stripeAmount,
             'stripe_amount_string' => (string) $cart->getOrderTotal(),
             'stripe_amount_formatted' => Tools::displayPrice($cart->getOrderTotal(), Currency::getCurrencyInstance($cart->id_currency)),
-            'apple_pay_image' => Media::getMediaPath($this->_path.'views/img/apple_pay_logo_black.png'),
             'id_cart' => (int) $cart->id,
             'stripe_secret_key' => Configuration::get(self::SECRET_KEY),
             'stripe_publishable_key' => Configuration::get(self::PUBLISHABLE_KEY),
@@ -1224,7 +1223,7 @@ class MdStripe extends PaymentModule
             'stripe_shopname' => $this->context->shop->name,
             'stripe_ajax_validation' => $link->getModuleLink($this->name, 'ajaxvalidation', array(), Tools::usingSecureMode()),
             'stripe_confirmation_page' => $link->getModuleLink($this->name, 'validation', array(), Tools::usingSecureMode()),
-            'stripe_ajax_confirmation_page' => $link->getPageLink('index.php?controller=order-confirmation&id_cart='.$cart->id.'&id_module='.$this->id.'&key='.$customer->secure_key),
+            'stripe_ajax_confirmation_page' => $link->getPageLink('order-confirmation', Tools::usingSecureMode(), '&id_cart='.$cart->id.'&id_module='.$this->id.'&key='.$customer->secure_key),
             'showPaymentLogos' => Configuration::get(self::SHOW_PAYMENT_LOGOS),
             'stripeShopThumb' => str_replace('http://', 'https://', $this->context->link->getMediaLink('/modules/mdstripe/views/img/shop'.$this->getShopId().'.jpg')),
             'stripe_collect_billing' => Configuration::get(self::COLLECT_BILLING),
@@ -2370,7 +2369,10 @@ class MdStripe extends PaymentModule
             return;
         }
         /** @var SimpleXMLElement $modules */
-        @$modules = $trustedXml->xpath('//modules')[0];
+        @$modules = $trustedXml->xpath('//modules');
+        if (!empty($modules)) {
+            $modules = $modules[0];
+        }
         if (empty($modules)) {
             return;
         }
@@ -2404,7 +2406,10 @@ class MdStripe extends PaymentModule
         }
         $highestPosition++;
         /** @var SimpleXMLElement $modules */
-        @$modules = $modulesTabXml->xpath('//tab[@class_name="AdminPayment"]')[0];
+        @$modules = $modulesTabXml->xpath('//tab[@class_name="AdminPayment"]');
+        if (!empty($modules)) {
+            $modules = $modules[0];
+        }
         if (empty($modules)) {
             return;
         }

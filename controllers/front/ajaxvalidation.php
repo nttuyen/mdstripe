@@ -28,6 +28,16 @@ class MdstripeAjaxvalidationModuleFrontController extends ModuleFrontController
     public $module;
 
     /**
+     * MdstripeAjaxvalidationModuleFrontController constructor.
+     */
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->ssl = Tools::usingSecureMode();
+    }
+
+    /**
      * Post process
      *
      * @return bool Whether the info has been successfully processed

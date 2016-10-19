@@ -28,6 +28,16 @@ class MdstripeHookModuleFrontController extends ModuleFrontController
     public $module;
 
     /**
+     * MdstripeHookModuleFrontController constructor.
+     */
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->ssl = Tools::usingSecureMode();
+    }
+
+    /**
      * Post process
      */
     public function postProcess()
