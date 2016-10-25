@@ -22,7 +22,6 @@ Contributions are more than welcome!
 - Uses Stripe's Checkout form to stay up to date with the latest version
 - Supports the Advanced checkout page of the Advanced EU Compliance module
 - Supports the new `paymentOptions` hook of PrestaShop 1.7
-- Supports the One Page Checkout module of PresTeamShop
 
 ### Roadmap
 The issue page will give you a good overview of the current roadmap and priorities:
@@ -30,7 +29,7 @@ https://github.com/firstred/mdstripe/issues
 
 ## Installation
 ### Module installation
-- Upload the module through FTP or your Back Office
+- Upload the module via your Back Office
 - Install the module
 - Check if there are any errors and correct them if necessary
 - Profit!
