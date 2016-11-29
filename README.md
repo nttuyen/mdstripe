@@ -42,5 +42,10 @@ The wiki can be found here: https://github.com/firstred/mdstripe/wiki
 - PHP `5.4`
 - `TLSv1.2` enabled cURL extension for PHP. More info: https://github.com/firstred/mdstripe/wiki/TLSv1.2
 
+### Compatibility
+PrestaShop `1.5.0.17` - `1.6.1.9`
+
+**PrestaShop 1.7 is not supported!!**
+
 ## License
 Academic Free License 3.0
