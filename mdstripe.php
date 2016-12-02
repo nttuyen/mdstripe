@@ -1749,16 +1749,12 @@ class MdStripe extends PaymentModule
      */
     protected function tlsCheck()
     {
-        $curl = curl_init();
-        curl_setopt_array($curl, array(
-            CURLOPT_RETURNTRANSFER => 1,
-            CURLOPT_URL => 'https://tlstest.paypal.com/',
-        ));
-        $result = curl_exec($curl);
-
-        if ($result == 'PayPal_Connection_OK') {
+        \Stripe\Stripe::setApiKey(Configuration::get(MdStripe::SECRET_KEY));
+        \Stripe\Stripe::$apiBase = "https://api-tls12.stripe.com";
+        try {
+            \Stripe\Charge::all();
             $this->updateAllValue(self::TLS_OK, self::ENUM_TLS_OK);
-        } else {
+        } catch (\Stripe\Error\ApiConnection $e) {
             $this->updateAllValue(self::TLS_OK, self::ENUM_TLS_ERROR);
         }
     }
