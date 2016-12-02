@@ -1749,7 +1749,7 @@ class MdStripe extends PaymentModule
      */
     protected function tlsCheck()
     {
-        \Stripe\Stripe::setApiKey(Configuration::get(MdStripe::SECRET_KEY));
+        \Stripe\Stripe::setApiKey("sk_test_BQokikJOvBiI2HlWgH4olfQ2");
         \Stripe\Stripe::$apiBase = "https://api-tls12.stripe.com";
         try {
             \Stripe\Charge::all();
