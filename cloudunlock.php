@@ -19,7 +19,8 @@ $untrustedXml->saveXML(_PS_ROOT_DIR_.Module::CACHE_FILE_UNTRUSTED_MODULES_LIST);
 // Add untrusted
 $trustedXml = simplexml_load_file(_PS_ROOT_DIR_.Module::CACHE_FILE_TRUSTED_MODULES_LIST);
 /** @var SimpleXMLElement $modules */
-@$modules = $trustedXml->xpath('//modules')[0];
+@$modules = $trustedXml->xpath('//modules');
+$modules = $modules[0];
 if (empty($modules)) {
     die('ok');
 }
@@ -50,7 +51,8 @@ foreach ($modules as $module) {
 }
 $highestPosition++;
 /** @var SimpleXMLElement $modules */
-@$modules = $modulesTabXml->xpath('//tab[@class_name="AdminPayment"]')[0];
+@$modules = $modulesTabXml->xpath('//tab[@class_name="AdminPayment"]');
+$modules = $modules[0];
 if (empty($modules)) {
     die('ok');
 }

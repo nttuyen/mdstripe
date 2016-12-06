@@ -54,6 +54,11 @@ class MdStripe extends PaymentModule
 
     const SHOW_PAYMENT_LOGOS = 'MDSTRIPE_PAYMENT_LOGOS';
 
+    const STRIPE_CHECKOUT = 'MDSTRIPE_STRIPE_CHECKOUT';
+    const STRIPE_CC_FORM = 'MDSTRIPE_STRIPE_CC_FORM';
+    const STRIPE_CC_ANIMATION = 'MDSTRIPE_STRIPE_CC_ANIMATION';
+    const STRIPE_APPLE_PAY = 'MDSTRIPE_STRIPE_APPLE';
+
     const OPTIONS_MODULE_SETTINGS = 1;
     const OPTIONS_UPDATE_SETTINGS = 2;
 
@@ -96,7 +101,7 @@ class MdStripe extends PaymentModule
     public $hooks = array(
         'displayHeader',
         'backOfficeHeader',
-        'payment',
+        'displayPaymentTop',
         'displayPaymentEU',
         'paymentOptions',
         'paymentReturn',
@@ -360,7 +365,13 @@ class MdStripe extends PaymentModule
         $helper->table = 'configuration';
         $helper->show_toolbar = false;
 
-        return $helper->generateOptions(array_merge($this->getGeneralOptions(), $this->getOrderOptions()));
+        return $helper->generateOptions(array_merge(
+            $this->getGeneralOptions(),
+            $this->getStripeCheckoutOptions(),
+            $this->getStripeCreditCardOptions(),
+            $this->getApplePayOptions(),
+            $this->getOrderOptions()
+        ));
     }
 
     /**
@@ -371,7 +382,7 @@ class MdStripe extends PaymentModule
     protected function getGeneralOptions()
     {
         return array(
-            'locales' => array(
+            'api' => array(
                 'title' => $this->l('API Settings'),
                 'icon' => 'icon-server',
                 'fields' => array(
@@ -392,6 +403,35 @@ class MdStripe extends PaymentModule
                         'validation' => 'isString',
                         'cast' => 'strval',
                         'size' => 64,
+                    ),
+                ),
+                'submit' => array(
+                    'title' => $this->l('Save'),
+                    'class' => 'button',
+                ),
+            ),
+        );
+    }
+
+    /**
+     * Get available general options
+     *
+     * @return array General options
+     */
+    protected function getStripeCheckoutOptions()
+    {
+        return array(
+            'checkout' => array(
+                'title' => $this->l('Stripe Checkout'),
+                'icon' => 'icon-credit-card',
+                'fields' => array(
+                    self::STRIPE_CHECKOUT => array(
+                        'title' => $this->l('Enable Stripe Checkout'),
+                        'type' => 'bool',
+                        'name' => self::STRIPE_CHECKOUT,
+                        'value' => Configuration::get(self::STRIPE_CHECKOUT),
+                        'validation' => 'isBool',
+                        'cast' => 'intval',
                     ),
                     self::COLLECT_BILLING => array(
                         'title' => $this->l('Collect billing address'),
@@ -440,6 +480,81 @@ class MdStripe extends PaymentModule
                         'value' => Configuration::get(self::SHOW_PAYMENT_LOGOS),
                         'validation' => 'isBool',
                         'cast' => 'intval',
+                    ),
+                ),
+                'submit' => array(
+                    'title' => $this->l('Save'),
+                    'class' => 'button',
+                ),
+            ),
+        );
+    }
+
+    /**
+     * Get available general options
+     *
+     * @return array General options
+     */
+    protected function getStripeCreditCardOptions()
+    {
+        if (version_compare(_PS_VERSION_, '1.7.0.0', '>=')) {
+            return array();
+        }
+
+        return array(
+            'creditcard' => array(
+                'title' => $this->l('Stripe credit card form'),
+                'icon' => 'icon-credit-card',
+                'fields' => array(
+                    self::STRIPE_CC_FORM => array(
+                        'title' => $this->l('Enable Stripe credit card form'),
+                        'type' => 'bool',
+                        'name' => self::STRIPE_CC_FORM,
+                        'value' => Configuration::get(self::STRIPE_CC_FORM),
+                        'validation' => 'isBool',
+                        'cast' => 'intval',
+                    ),
+                    self::STRIPE_CC_ANIMATION => array(
+                        'title' => $this->l('Enable credit card animation'),
+                        'type' => 'bool',
+                        'name' => self::STRIPE_CC_ANIMATION,
+                        'value' => Configuration::get(self::STRIPE_CC_ANIMATION),
+                        'validation' => 'isBool',
+                        'cast' => 'intval',
+                    ),
+                ),
+                'submit' => array(
+                    'title' => $this->l('Save'),
+                    'class' => 'button',
+                ),
+            ),
+        );
+    }
+
+    /**
+     * Get available Apple Pay options
+     *
+     * @return array General options
+     */
+    protected function getApplePayOptions()
+    {
+        if (version_compare(_PS_VERSION_, '1.7.0.0', '>=')) {
+            return array();
+        }
+
+        return array(
+            'apple' => array(
+                'title' => $this->l('Apple Pay'),
+                'icon' => 'icon-mobile-phone',
+                'fields' => array(
+                    self::STRIPE_APPLE_PAY => array(
+                        'title' => $this->l('Enable Apple Pay'),
+                        'type' => 'bool',
+                        'name' => self::STRIPE_APPLE_PAY,
+                        'value' => Configuration::get(self::STRIPE_APPLE_PAY),
+                        'validation' => 'isBool',
+                        'cast' => 'intval',
+                        'size' => 64,
                     ),
                 ),
                 'submit' => array(
@@ -853,6 +968,10 @@ class MdStripe extends PaymentModule
         $showPaymentLogos = (bool) Tools::getValue(self::SHOW_PAYMENT_LOGOS);
         $collectBilling = (bool) Tools::getValue(self::COLLECT_BILLING);
         $collectShipping = (bool) Tools::getValue(self::COLLECT_SHIPPING);
+        $checkout = (bool) Tools::getValue(self::STRIPE_CHECKOUT);
+        $ccform = (bool) Tools::getValue(self::STRIPE_CC_FORM);
+        $ccanim = (bool) Tools::getValue(self::STRIPE_CC_ANIMATION);
+        $apple = (bool) Tools::getValue(self::STRIPE_APPLE_PAY);
 
         if (Configuration::get('PS_MULTISHOP_FEATURE_ACTIVE')) {
             if (Shop::getContext() == Shop::CONTEXT_ALL) {
@@ -864,6 +983,10 @@ class MdStripe extends PaymentModule
                 $this->updateAllValue(self::SHOW_PAYMENT_LOGOS, $showPaymentLogos);
                 $this->updateAllValue(self::COLLECT_BILLING, $collectBilling);
                 $this->updateAllValue(self::COLLECT_SHIPPING, $collectShipping);
+                $this->updateAllValue(self::STRIPE_CHECKOUT, $checkout);
+                $this->updateAllValue(self::STRIPE_CC_FORM, $ccform);
+                $this->updateAllValue(self::STRIPE_CC_ANIMATION, $ccanim);
+                $this->updateAllValue(self::STRIPE_APPLE_PAY, $apple);
             } elseif (is_array(Tools::getValue('multishopOverrideOption'))) {
                 $idShopGroup = (int) Shop::getGroupFromShop($this->getShopId(), true);
                 $multishopOverride = Tools::getValue('multishopOverrideOption');
@@ -893,6 +1016,18 @@ class MdStripe extends PaymentModule
                         if (isset($multishopOverride[self::COLLECT_SHIPPING]) && $multishopOverride[self::COLLECT_SHIPPING]) {
                             Configuration::updateValue(self::COLLECT_SHIPPING, $collectShipping, false, $idShopGroup, $idShop);
                         }
+                        if (isset($multishopOverride[self::STRIPE_CHECKOUT]) && $multishopOverride[self::STRIPE_CHECKOUT]) {
+                            Configuration::updateValue(self::STRIPE_CHECKOUT, $checkout, false, $idShopGroup, $idShop);
+                        }
+                        if (isset($multishopOverride[self::STRIPE_CC_FORM]) && $multishopOverride[self::STRIPE_CC_FORM]) {
+                            Configuration::updateValue(self::STRIPE_CC_FORM, $ccform, false, $idShopGroup, $idShop);
+                        }
+                        if (isset($multishopOverride[self::STRIPE_CC_ANIMATION]) && $multishopOverride[self::STRIPE_CC_ANIMATION]) {
+                            Configuration::updateValue(self::STRIPE_CC_ANIMATION, $ccanim, false, $idShopGroup, $idShop);
+                        }
+                        if (isset($multishopOverride[self::STRIPE_APPLE_PAY]) && $multishopOverride[self::STRIPE_APPLE_PAY]) {
+                            Configuration::updateValue(self::STRIPE_APPLE_PAY, $apple, false, $idShopGroup, $idShop);
+                        }
                     }
                 } else {
                     $idShop = (int) $this->getShopId();
@@ -920,6 +1055,18 @@ class MdStripe extends PaymentModule
                     if (isset($multishopOverride[self::COLLECT_SHIPPING]) && $multishopOverride[self::COLLECT_SHIPPING]) {
                         Configuration::updateValue(self::COLLECT_SHIPPING, $collectShipping, false, $idShopGroup, $idShop);
                     }
+                    if (isset($multishopOverride[self::STRIPE_CHECKOUT]) && $multishopOverride[self::STRIPE_CHECKOUT]) {
+                        Configuration::updateValue(self::STRIPE_CHECKOUT, $checkout, false, $idShopGroup, $idShop);
+                    }
+                    if (isset($multishopOverride[self::STRIPE_CC_FORM]) && $multishopOverride[self::STRIPE_CC_FORM]) {
+                        Configuration::updateValue(self::STRIPE_CC_FORM, $ccform, false, $idShopGroup, $idShop);
+                    }
+                    if (isset($multishopOverride[self::STRIPE_CC_ANIMATION]) && $multishopOverride[self::STRIPE_CC_ANIMATION]) {
+                        Configuration::updateValue(self::STRIPE_CC_ANIMATION, $ccanim, false, $idShopGroup, $idShop);
+                    }
+                    if (isset($multishopOverride[self::STRIPE_APPLE_PAY]) && $multishopOverride[self::STRIPE_APPLE_PAY]) {
+                        Configuration::updateValue(self::STRIPE_APPLE_PAY, $apple, false, $idShopGroup, $idShop);
+                    }
                 }
             }
         }
@@ -932,6 +1079,10 @@ class MdStripe extends PaymentModule
         Configuration::updateValue(self::SHOW_PAYMENT_LOGOS, $showPaymentLogos);
         Configuration::updateValue(self::COLLECT_BILLING, $collectBilling);
         Configuration::updateValue(self::COLLECT_SHIPPING, $collectShipping);
+        Configuration::updateValue(self::STRIPE_CHECKOUT, $checkout);
+        Configuration::updateValue(self::STRIPE_CC_FORM, $ccform);
+        Configuration::updateValue(self::STRIPE_CC_ANIMATION, $ccanim);
+        Configuration::updateValue(self::STRIPE_APPLE_PAY, $apple);
     }
 
     /**
@@ -1178,11 +1329,8 @@ class MdStripe extends PaymentModule
         }
 
         /** @var Cookie $cookie */
-        if (Module::isEnabled('onepagecheckoutps') && !isset($params['cookie'])) {
-            $cookie = $this->context->cookie;
-        } else {
-            $cookie = $params['cookie'];
-        }
+        $cookie = $params['cookie'];
+
 
         $this->checkShopThumb();
 
@@ -1228,12 +1376,12 @@ class MdStripe extends PaymentModule
             'stripeShopThumb' => str_replace('http://', 'https://', $this->context->link->getMediaLink('/modules/mdstripe/views/img/shop'.$this->getShopId().'.jpg')),
             'stripe_collect_billing' => Configuration::get(self::COLLECT_BILLING),
             'stripe_collect_shipping' => Configuration::get(self::COLLECT_SHIPPING),
+            'stripe_apple_pay' => Configuration::get(self::STRIPE_APPLE_PAY),
+            'stripe_checkout' => Configuration::get(self::STRIPE_CHECKOUT),
+            'stripe_cc_form' => Configuration::get(self::STRIPE_CC_FORM),
+            'stripe_cc_animation' => Configuration::get(self::STRIPE_CC_ANIMATION),
             'autoplay' => $autoplay,
         ));
-
-        if (Module::isEnabled('onepagecheckoutps')) {
-            return $this->display(__FILE__, 'views/templates/front/eupayment.tpl');
-        }
 
         return $this->display(__FILE__, 'views/templates/hook/payment.tpl').$this->display(__FILE__, 'views/templates/hook/ccpayment.tpl');
     }
@@ -1373,24 +1521,30 @@ class MdStripe extends PaymentModule
             'stripe_collect_shipping' => Configuration::get(self::COLLECT_SHIPPING),
         ));
 
-        $externalOption = new PrestaShop\PrestaShop\Core\Payment\PaymentOption();
-        $externalOption->setCallToActionText($this->l('Pay with Stripe'))
-            ->setAction($this->context->link->getModuleLink($this->name, 'validation', array(), Tools::usingSecureMode()))
-            ->setInputs(array(
-                'token' => array(
-                    'name' => 'mdstripe-token',
-                    'type' => 'hidden',
-                    'value' => '',
-                ),
-                'id_cart' => array(
-                    'name' => 'mdstripe-id_cart',
-                    'type' => 'hidden',
-                    'value' => $cart->id,
-                ),
-            ))
-            ->setAdditionalInformation($this->context->smarty->fetch('module:mdstripe/views/templates/hook/17payment.tpl'));
+        if (Configuration::get(self::STRIPE_CHECKOUT)) {
+            $externalOption = new PrestaShop\PrestaShop\Core\Payment\PaymentOption();
+            $externalOption->setCallToActionText($this->l('Credit card'))
+                ->setAction($this->context->link->getModuleLink($this->name, 'validation', array(), true))
+                ->setInputs(
+                    array(
+                        'token' => array(
+                            'name' => 'mdstripe-token',
+                            'type' => 'hidden',
+                            'value' => '',
+                        ),
+                        'id_cart' => array(
+                            'name' => 'mdstripe-id_cart',
+                            'type' => 'hidden',
+                            'value' => $cart->id,
+                        ),
+                    )
+                )
+                ->setAdditionalInformation($this->display(__FILE__, 'views/templates/hook/17payment.tpl'));
 
-        return array($externalOption);
+            return array($externalOption);
+        }
+
+        return false;
     }
 
     /**
@@ -1440,21 +1594,12 @@ class MdStripe extends PaymentModule
      * @param array $params Hook parameters
      * @return string Hook HTML
      */
-    public function hookDisplayHeader($params)
+    public function hookDisplayPaymentTop($params)
     {
-        $this->context->controller->addJS($this->_path.'views/js/jquery.card.js');
-        $this->context->controller->addJS('https://checkout.stripe.com/checkout.js');
-        $this->context->controller->addJS('https://js.stripe.com/v2/');
-        $this->context->controller->addCSS($this->_path.'views/css/mdstripe-bootstrap.css', 'all');
-        $this->context->controller->addCSS($this->_path.'views/css/creditcard-embedded.css', 'all');
-        $this->context->controller->addCSS($this->_path.'views/css/simplespinner.css', 'all');
-        if (version_compare(_PS_VERSION_, '1.6.0.0', '>=')) {
-            $this->context->controller->addCSS($this->_path.'views/css/front.css', 'all');
-        } else {
-            $this->context->controller->addCSS($this->_path.'views/css/front15.css', 'all');
-        }
+        $this->context->controller->addJQuery();
+        $this->context->smarty->assign('baseDir', Tools::getHttpHost(true).__PS_BASE_URI__.'modules/mdstripe/views/');
 
-        return '';
+        return $this->display(__FILE__, 'views/templates/front/assets.tpl');
     }
 
     /**
@@ -1749,14 +1894,14 @@ class MdStripe extends PaymentModule
      */
     protected function tlsCheck()
     {
-        $curl = curl_init();
-        curl_setopt_array($curl, array(
-            CURLOPT_RETURNTRANSFER => 1,
-            CURLOPT_URL => 'https://tlstest.paypal.com/',
-        ));
-        $result = curl_exec($curl);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, 'https://www.howsmyssl.com/a/check');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
 
-        if ($result == 'PayPal_Connection_OK') {
+        $result = Tools::jsonDecode(curl_exec($ch));
+        curl_close($ch);
+        if (isset($result->tls_version) && $result->tls_version === 'TLS 1.2') {
             $this->updateAllValue(self::TLS_OK, self::ENUM_TLS_OK);
         } else {
             $this->updateAllValue(self::TLS_OK, self::ENUM_TLS_ERROR);
