@@ -21,8 +21,6 @@ Contributions are more than welcome!
 - View all transactions on the module configuration page
 - Uses Stripe's Checkout form to stay up to date with the latest version
 - Supports the Advanced checkout page of the Advanced EU Compliance module
-- Supports the new `paymentOptions` hook of PrestaShop 1.7
-- Supports the One Page Checkout module of PresTeamShop
 
 ### Roadmap
 The issue page will give you a good overview of the current roadmap and priorities:
@@ -42,6 +40,9 @@ The wiki can be found here: https://github.com/firstred/mdstripe/wiki
 - PrestaShop `1.5.0.17`
 - PHP `5.4`
 - `TLSv1.2` enabled cURL extension for PHP. More info: https://github.com/firstred/mdstripe/wiki/TLSv1.2
+
+### Compatibility
+- PrestaShop `1.5.0.17` - `1.7.0.2`
 
 ## License
 Academic Free License 3.0
