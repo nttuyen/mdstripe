@@ -50,7 +50,7 @@
 			}
 
 			function initStripe() {
-				if (typeof StripeCheckout === 'undefined') {
+				if (typeof StripeCheckout === 'undefined' || typeof $ === 'undefined') {
 					setTimeout(initStripe, 100);
 					return;
 				}
@@ -71,9 +71,11 @@
 
 				$('#mdstripe_payment_link').click(openStripeHandler);
 				{if $autoplay}
-				$(document).ready(openStripeHandler);
+				openStripeHandler;
 				{/if}
 			}
+
+			initStripe();
 		})();
 	</script>
 </div>
