@@ -24,5 +24,7 @@ function upgrade_module_1_0_13($module)
         $module->registerHook($hook);
     }
 
+    Configuration::updateGlobalValue('MDSTRIPE_STRIPE_CHECKOUT', true);
+
     return true;
 }
