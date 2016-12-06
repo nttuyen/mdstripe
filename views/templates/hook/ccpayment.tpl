@@ -1,60 +1,80 @@
 <script type="text/javascript">
 	(function() {
-		function stripeResponseHandler(status, response) {
-			// Grab the form:
-			var $form = $('#stripe-cc-form');
-
-			if (response.error) { // Problem!
-				// Show the errors on the form:
-				$form.find('.payment-errors').text(response.error.message);
-				$form.find('.submit').prop('disabled', false); // Re-enable submission
-				$form.find('.stripe-loader').hide();
-			} else { // Token was created!
-				// Get the token ID:
-				var token = response.id;
-
-				// Insert the token ID into the form so it gets submitted to the server:
-				$form.append($('<input type="hidden" name="mdstripe-token">').val(token));
-
-				// Submit the form:
-				$form.get(0).submit();
+		function initEverything() {
+			if (!{if $stripe_cc_form}true{else}false{/if}) {
+				return;
 			}
-		};
 
-		$(document).ready(function () {
-			var $form = $('#stripe-cc-form');
-			$form.card({
-				container: '#mdstripe-card-wrapper',
-				formSelectors: {
-					numberInput: '#stripeCardNumber',
-					expiryInput: '#stripeCardExpiry',
-					cvcInput: '#stripeCardCVC',
-				},
-				placeholders : {
-					name: '{$stripe_name|escape:'javascript':'UTF-8'}',
-				},
-			});
+			if (typeof $ === 'undefined') {
+				setTimeout(initEverything, '100');
+				return;
+			}
 
-			Stripe.setPublishableKey('{$stripe_publishable_key|escape:'javascript':'UTF-8'}');
+			function stripeResponseHandler(status, response) {
+				// Grab the form:
+				var $form = $('#stripe-cc-form');
 
-			$form.submit(function(event) {
-				// Disable the submit button to prevent repeated clicks:
-				$form.find('.submit').prop('disabled', true);
-				$form.find('.stripe-loader').show();
+				if (response.error) { // Problem!
+					// Show the errors on the form:
+					$form.find('.payment-errors').text(response.error.message);
+					$form.find('.submit').prop('disabled', false); // Re-enable submission
+					$form.find('.stripe-loader').hide();
+				} else { // Token was created!
+					// Get the token ID:
+					var token = response.id;
 
-				// Request a token from Stripe:
-				var expiry = $('#stripeCardExpiry').val().split('/', 2);
-				Stripe.card.createToken({
-					number: $('#stripeCardNumber').val(),
-					cvc: $('#stripeCardCVC').val(),
-					exp_month: parseInt(expiry[0]),
-					exp_year: parseInt(expiry[1]),
-					address_zip: $('#stripeCardZip').val(),
-				}, stripeResponseHandler);
-				// Prevent the form from being submitted:
-				return false;
-			});
-		});
+					// Insert the token ID into the form so it gets submitted to the server:
+					$form.append($('<input type="hidden" name="mdstripe-token">').val(token));
+
+					// Submit the form:
+					$form.get(0).submit();
+				}
+			};
+
+			function initStripeCC() {
+				if (typeof Stripe === 'undefined' || typeof Card === 'undefined') {
+					setTimeout(initStripeCC, 100);
+					return;
+				}
+
+				var $form = $('#stripe-cc-form');
+				$form.card({
+					container: '#mdstripe-card-wrapper',
+					formSelectors: {
+						numberInput: '#stripeCardNumber',
+						expiryInput: '#stripeCardExpiry',
+						cvcInput: '#stripeCardCVC',
+					},
+					placeholders: {
+						name: '{$stripe_name|escape:'javascript':'UTF-8'}',
+					},
+				});
+
+				Stripe.setPublishableKey('{$stripe_publishable_key|escape:'javascript':'UTF-8'}');
+
+				$form.submit(function (event) {
+					// Disable the submit button to prevent repeated clicks:
+					$form.find('.submit').prop('disabled', true);
+					$form.find('.stripe-loader').show();
+
+					// Request a token from Stripe:
+					var expiry = $('#stripeCardExpiry').val().split('/', 2);
+					Stripe.card.createToken({
+						number: $('#stripeCardNumber').val(),
+						cvc: $('#stripeCardCVC').val(),
+						exp_month: parseInt(expiry[0]),
+						exp_year: parseInt(expiry[1]),
+						address_zip: $('#stripeCardZip').val(),
+					}, stripeResponseHandler);
+					// Prevent the form from being submitted:
+					return false;
+				});
+			}
+
+			initStripeCC();
+		}
+
+		initEverything();
 	})();
 </script>
 <br />

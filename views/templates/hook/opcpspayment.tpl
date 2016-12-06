@@ -36,35 +36,46 @@
 		</p>
 	</div>
 	<script type="text/javascript">
-		var handler = StripeCheckout.configure({
-			key: '{$stripe_publishable_key|escape:'javascript':'UTF-8'}',
-			image: '/img/logo.jpg',
-			locale: 'auto',
-			token: function (token) {
-				var $form = $('#stripe-form');
-				{* Insert the token into the form so it gets submitted to the server: *}
-				$form.append($('<input type="hidden" name="mdstripe-token" />').val(token.id));
+		(function() {
+			function initStripe() {
+				if (typeof StripeCheckout !== 'undefined') {
+					setTimeout(initStripe, 100);
+					return;
+				}
 
-				{* Submit the form: *}
-				$form.get(0).submit();
+				var handler = StripeCheckout.configure({
+					key: '{$stripe_publishable_key|escape:'javascript':'UTF-8'}',
+					image: '/img/logo.jpg',
+					locale: 'auto',
+					token: function (token) {
+						var $form = $('#stripe-form');
+						{* Insert the token into the form so it gets submitted to the server: *}
+						$form.append($('<input type="hidden" name="mdstripe-token" />').val(token.id));
+
+						{* Submit the form: *}
+						$form.get(0).submit();
+					}
+				});
+
+				$('#mdstripe_payment_link').on('click', function (e) {
+					{* Open Checkout with further options: *}
+					handler.open({
+						name: '{$stripe_shopname|escape:'javascript':'UTF-8'}',
+						zipCode: {if $stripe_zipcode}true{else}false{/if},
+						bitcoin: {if $stripe_bitcoin}true{else}false{/if},
+						alipay: {if $stripe_alipay}true{else}false{/if},
+						currency: '{$stripe_currency|escape:'javascript':'UTF-8'}',
+						amount: '{$stripe_amount|escape:'javascript':'UTF-8'}',
+						email: '{$stripe_email|escape:'javascript':'UTf-8'}',
+						billingAddress: {if $stripe_collect_billing}true{else}false{/if},
+						shippingAddress: {if $stripe_collect_shipping}true{else}false{/if}
+					});
+					e.preventDefault();
+				});
 			}
-		});
 
-		$('#mdstripe_payment_link').on('click', function(e) {
-			{* Open Checkout with further options: *}
-			handler.open({
-				name: '{$stripe_shopname|escape:'javascript':'UTF-8'}',
-				zipCode: {if $stripe_zipcode}true{else}false{/if},
-				bitcoin: {if $stripe_bitcoin}true{else}false{/if},
-				alipay: {if $stripe_alipay}true{else}false{/if},
-				currency: '{$stripe_currency|escape:'javascript':'UTF-8'}',
-				amount: '{$stripe_amount|escape:'javascript':'UTF-8'}',
-				email: '{$stripe_email|escape:'javascript':'UTf-8'}',
-				billingAddress: {if $stripe_collect_billing}true{else}false{/if},
-				shippingAddress: {if $stripe_collect_shipping}true{else}false{/if}
-			});
-			e.preventDefault();
-		});
+			initStripe();
+		})();
 	</script>
 </div>
 <!-- /mdstripe views/templates/hook/opcpspayment.tpl -->
