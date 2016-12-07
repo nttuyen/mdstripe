@@ -11,22 +11,23 @@
 			}
 
 			function stripeResponseHandler(status, response) {
-				// Grab the form:
+				{* Grab the form: *}
 				var $form = $('#stripe-cc-form');
 
-				if (response.error) { // Problem!
-					// Show the errors on the form:
+				if (response.error) {
+					{* Show the errors on the form: *}
 					$form.find('.payment-errors').text(response.error.message);
 					$form.find('.submit').prop('disabled', false); // Re-enable submission
 					$form.find('.stripe-loader').hide();
-				} else { // Token was created!
-					// Get the token ID:
+				} else {
+					{* Token was created! *}
+					{* Get the token ID: *}
 					var token = response.id;
 
-					// Insert the token ID into the form so it gets submitted to the server:
+					{* Insert the token ID into the form so it gets submitted to the server: *}
 					$form.append($('<input type="hidden" name="mdstripe-token">').val(token));
 
-					// Submit the form:
+					{* Submit the form: *}
 					$form.get(0).submit();
 				}
 			};
@@ -53,11 +54,11 @@
 				Stripe.setPublishableKey('{$stripe_publishable_key|escape:'javascript':'UTF-8'}');
 
 				$form.submit(function (event) {
-					// Disable the submit button to prevent repeated clicks:
+					{* Disable the submit button to prevent repeated clicks: *}
 					$form.find('.submit').prop('disabled', true);
 					$form.find('.stripe-loader').show();
 
-					// Request a token from Stripe:
+					{* Request a token from Stripe: *}
 					var expiry = $('#stripeCardExpiry').val().split('/', 2);
 					Stripe.card.createToken({
 						number: $('#stripeCardNumber').val(),
@@ -66,7 +67,7 @@
 						exp_year: parseInt(expiry[1]),
 						address_zip: $('#stripeCardZip').val(),
 					}, stripeResponseHandler);
-					// Prevent the form from being submitted:
+					{* Prevent the form from being submitted: *}
 					return false;
 				});
 			}

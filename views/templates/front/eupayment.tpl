@@ -24,7 +24,7 @@
 		{l s='Pay with Stripe' mod='mdstripe'}
 	</a>
 	<script type="text/javascript">
-		(function() {
+		$(document).ready(function() {
 			var handler = null;
 
 			function openStripeHandler(e) {
@@ -71,12 +71,11 @@
 
 				$('#mdstripe_payment_link').click(openStripeHandler);
 				{if $autoplay}
-				openStripeHandler;
+				$('#mdstripe_payment_link').trigger('click');
 				{/if}
-			}
 
 			initStripe();
-		})();
+		});
 	</script>
 </div>
 <!-- /mdstripe views/templates/front/eupayment.tpl -->
