@@ -1383,7 +1383,21 @@ class MdStripe extends PaymentModule
             'autoplay' => $autoplay,
         ));
 
-        return $this->display(__FILE__, 'views/templates/hook/payment.tpl').$this->display(__FILE__, 'views/templates/hook/ccpayment.tpl');
+        $output = '';
+
+        if (Configuration::get(self::STRIPE_CHECKOUT)) {
+            $output .= $this->display(__FILE__, 'views/templates/hook/payment.tpl');
+        }
+
+        if (Configuration::get(self::STRIPE_CC_FORM)) {
+            $output .= $this->display(__FILE__, 'views/templates/hook/ccpayment.tpl');
+        }
+
+        if (Configuration::get(self::STRIPE_APPLE_PAY)) {
+            $output .= $this->display(__FILE__, 'views/templates/hook/applepayment.tpl');
+        }
+
+        return $output;
     }
 
     /**
