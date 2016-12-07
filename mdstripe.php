@@ -1368,7 +1368,7 @@ class MdStripe extends PaymentModule
             'stripe_alipay' => (bool) Configuration::get(self::ALIPAY),
             'stripe_shopname' => $this->context->shop->name,
             'stripe_confirmation_page' => $link->getModuleLink($this->name, 'validation', array(), Tools::usingSecureMode()),
-            'stripeShopThumb' => $this->context->link->getMediaLink('/modules/mdstripe/views/img/shop'.$this->getShopId().'.jpg'),
+            'stripeShopThumb' => $this->context->link->getMediaLink(__PS_BASE_URI__.'/modules/mdstripe/views/img/shop'.$this->getShopId().'.jpg'),
             'stripe_collect_billing' => Configuration::get(self::COLLECT_BILLING),
             'stripe_collect_shipping' => Configuration::get(self::COLLECT_SHIPPING),
         ));
