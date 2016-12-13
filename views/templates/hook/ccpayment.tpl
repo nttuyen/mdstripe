@@ -160,7 +160,14 @@
 				</div>
 			</div>
 		</form>
+		{if $stripe_cc_animation}
 		<div id="mdstripe-card-wrapper" class="col-md-6 col-lg col-xl-6 hidden-xs hidden-sm"></div>
+		{/if}
 	</div>
 </div>
+
+{* Dummy placeholder if animation is disabled *}
+{if !$stripe_cc_animation}
+	<div id="mdstripe-card-wrapper" style="display:none"></div>
+{/if}
 

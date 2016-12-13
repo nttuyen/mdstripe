@@ -6,20 +6,22 @@
 				return;
 			}
 
+			{if $stripe_checkout}
 			if (typeof StripeCheckout === 'undefined') {
 				$.getScript('https://checkout.stripe.com/checkout.js');
 			}
+			{/if}
+
+			{if $stripe_cc_form || $stripe_apple_pay}
 			if (typeof Stripe === 'undefined') {
 				$.getScript('https://js.stripe.com/v2/');
 			}
+			{/if}
 
 			{if $stripe_cc_form}
 				if (typeof Card === 'undefined') {
 					$.getScript('{$baseDir|escape:'javascript':'UTF-8' nofilter}js/jquery.card.js');
 				}
-			{/if}
-
-			{if $stripe_cc_form}
 				if (!$("link[href='{$baseDir|escape:'javascript':'UTF-8' nofilter}css/mdstripe-bootstrap.css']").length) {
 					$('<link href="{$baseDir|escape:'javascript':'UTF-8' nofilter}css/mdstripe-bootstrap.css" rel="stylesheet">').appendTo('head');
 				}
