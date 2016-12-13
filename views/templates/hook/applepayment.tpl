@@ -52,7 +52,7 @@
 				return;
 			}
 
-			if (typeof Stripe === 'undefined') {
+			if (typeof $ === 'undefined' || typeof Stripe === 'undefined') {
 				setTimeout(initApplePay, 100);
 				return;
 			}

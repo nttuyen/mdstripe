@@ -118,7 +118,7 @@ class MdStripe extends PaymentModule
     {
         $this->name = 'mdstripe';
         $this->tab = 'payments_gateways';
-        $this->version = '1.0.13';
+        $this->version = '1.0.14';
         $this->author = 'Mijn Presta';
         $this->need_instance = 1;
 
@@ -1373,7 +1373,7 @@ class MdStripe extends PaymentModule
             'stripe_confirmation_page' => $link->getModuleLink($this->name, 'validation', array(), Tools::usingSecureMode()),
             'stripe_ajax_confirmation_page' => $link->getPageLink('order-confirmation', Tools::usingSecureMode(), '&id_cart='.$cart->id.'&id_module='.$this->id.'&key='.$customer->secure_key),
             'showPaymentLogos' => Configuration::get(self::SHOW_PAYMENT_LOGOS),
-            'stripeShopThumb' => str_replace('http://', 'https://', $this->context->link->getMediaLink('/modules/mdstripe/views/img/shop'.$this->getShopId().'.jpg')),
+            'stripeShopThumb' => str_replace('http://', 'https://', $this->context->link->getMediaLink(__PS_BASE_URI__.'modules/mdstripe/views/img/shop'.$this->getShopId().'.jpg')),
             'stripe_collect_billing' => Configuration::get(self::COLLECT_BILLING),
             'stripe_collect_shipping' => Configuration::get(self::COLLECT_SHIPPING),
             'stripe_apple_pay' => Configuration::get(self::STRIPE_APPLE_PAY),
@@ -1553,6 +1553,7 @@ class MdStripe extends PaymentModule
                         ),
                     )
                 )
+                ->setModuleName($this->name.'-credit-card')
                 ->setAdditionalInformation($this->display(__FILE__, 'views/templates/hook/17payment.tpl'));
 
             return array($externalOption);
@@ -1611,7 +1612,12 @@ class MdStripe extends PaymentModule
     public function hookDisplayPaymentTop($params)
     {
         $this->context->controller->addJQuery();
-        $this->context->smarty->assign('baseDir', Tools::getHttpHost(true).__PS_BASE_URI__.'modules/mdstripe/views/');
+        $this->context->smarty->assign(array(
+            'baseDir' => Tools::getHttpHost(true).__PS_BASE_URI__.'modules/mdstripe/views/',
+            'stripe_checkout' => (bool) Configuration::get(self::STRIPE_CHECKOUT),
+            'stripe_cc_form' => (bool) Configuration::get(self::STRIPE_CC_FORM),
+            'stripe_apple_pay' => (bool) Configuration::get(self::STRIPE_APPLE_PAY),
+        ));
 
         return $this->display(__FILE__, 'views/templates/front/assets.tpl');
     }
@@ -1908,8 +1914,8 @@ class MdStripe extends PaymentModule
      */
     protected function tlsCheck()
     {
-        \Stripe\Stripe::setApiKey("sk_test_BQokikJOvBiI2HlWgH4olfQ2");
-        \Stripe\Stripe::$apiBase = "https://api-tls12.stripe.com";
+        \Stripe\Stripe::setApiKey('sk_test_BQokikJOvBiI2HlWgH4olfQ2');
+        \Stripe\Stripe::$apiBase = 'https://api-tls12.stripe.com';
         try {
             \Stripe\Charge::all();
             $this->updateAllValue(self::TLS_OK, self::ENUM_TLS_OK);
@@ -2135,10 +2141,13 @@ class MdStripe extends PaymentModule
         if ($lastCheck < (time() - self::CHECK_INTERVAL) || Tools::getValue($this->name.'CheckUpdate')) {
             Configuration::updateGlobalValue(self::LAST_CHECK, time());
             // Initialize GitHub Client
+            $tmpDir = ini_get('upload_tmp_dir');
+            if (empty($tmpDir)) {
+                $tmpDir = '/tmp';
+            }
             $client = new \Github\Client(
-                new \Github\HttpClient\CachedHttpClient(array('cache_dir' => '/tmp/github-api-cache'))
+                new \Github\HttpClient\CachedHttpClient(array('cache_dir' => $tmpDir.'/github-api-cache'))
             );
-
             list($currentMajor, $currentMinor, $currentPatch) = explode('.', $this->version);
 
             // Check the release tag
