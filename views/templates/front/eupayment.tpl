@@ -73,7 +73,7 @@
 				{if $autoplay}
 				$('#mdstripe_payment_link').trigger('click');
 				{/if}
-
+			}
 			initStripe();
 		});
 	</script>
