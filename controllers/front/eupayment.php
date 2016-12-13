@@ -88,6 +88,7 @@ class MdstripeEupaymentModuleFrontController extends ModuleFrontController
             'stripe_shopname' => $this->context->shop->name,
             'stripe_collect_billing' => Configuration::get(MdStripe::COLLECT_BILLING),
             'stripe_collect_shipping' => Configuration::get(MdStripe::COLLECT_SHIPPING),
+            'autoplay' => true,
         ));
 
         $this->setTemplate('eupayment.tpl');

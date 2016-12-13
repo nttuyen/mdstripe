@@ -24,58 +24,71 @@
 		{l s='Pay with Stripe' mod='mdstripe'}
 	</a>
 	<script type="text/javascript">
-		$(document).ready(function() {
+		(function() {
 			var handler = null;
 
-			function openStripeHandler(e) {
-				if (!handler) {
+			function initEuStripe() {
+				if (typeof $ === 'undefined') {
+					setTimeout(initEuStripe, 100);
 					return;
 				}
 
-				{* Open Checkout with further options: *}
-				handler.open({
-					name: '{$stripe_shopname|escape:'javascript':'UTF-8'}',
-					zipCode: {if $stripe_zipcode}true{else}false{/if},
-					bitcoin: {if $stripe_bitcoin}true{else}false{/if},
-					alipay: {if $stripe_alipay}true{else}false{/if},
-					currency: '{$stripe_currency|escape:'javascript':'UTF-8'}',
-					amount: '{$stripe_amount|escape:'javascript':'UTF-8'}',
-					email: '{$stripe_email|escape:'javascript':'UTf-8'}',
-					billingAddress: {if $stripe_collect_billing}true{else}false{/if},
-					shippingAddress: {if $stripe_collect_shipping}true{else}false{/if}
-				});
-				if (typeof e !== 'undefined' && typeof e !== 'function') {
-					e.preventDefault();
-				}
-			}
+				$(document).ready(function () {
 
-			function initStripe() {
-				if (typeof StripeCheckout === 'undefined' || typeof $ === 'undefined') {
-					setTimeout(initStripe, 100);
-					return;
-				}
+					function openStripeHandler(e) {
+						if (!handler) {
+							return;
+						}
 
-				handler = StripeCheckout.configure({
-					key: '{$stripe_publishable_key|escape:'javascript':'UTF-8'}',
-					image: '/img/logo.jpg',
-					locale: '{$stripe_locale|escape:'javascript':'UTF-8'}',
-					token: function (token) {
-						var $form = $('#stripe-form');
-						{* Insert the token into the form so it gets submitted to the server: *}
-						$form.append($('<input type="hidden" name="mdstripe-token" />').val(token.id));
-
-						{* Submit the form: *}
-						$form.get(0).submit();
+						{* Open Checkout with further options: *}
+						handler.open({
+							name: '{$stripe_shopname|escape:'javascript':'UTF-8'}',
+							zipCode: {if $stripe_zipcode}true{else}false{/if},
+							bitcoin: {if $stripe_bitcoin}true{else}false{/if},
+							alipay: {if $stripe_alipay}true{else}false{/if},
+							currency: '{$stripe_currency|escape:'javascript':'UTF-8'}',
+							amount: '{$stripe_amount|escape:'javascript':'UTF-8'}',
+							email: '{$stripe_email|escape:'javascript':'UTf-8'}',
+							billingAddress: {if $stripe_collect_billing}true{else}false{/if},
+							shippingAddress: {if $stripe_collect_shipping}true{else}false{/if}
+						});
+						if (typeof e !== 'undefined' && typeof e !== 'function') {
+							e.preventDefault();
+						}
 					}
-				});
 
-				$('#mdstripe_payment_link').click(openStripeHandler);
-				{if $autoplay}
-				$('#mdstripe_payment_link').trigger('click');
-				{/if}
+					function initStripe() {
+						if (typeof StripeCheckout === 'undefined' || typeof $ === 'undefined') {
+							setTimeout(initStripe, 100);
+							return;
+						}
+
+						handler = StripeCheckout.configure({
+							key: '{$stripe_publishable_key|escape:'javascript':'UTF-8'}',
+							image: '/img/logo.jpg',
+							locale: '{$stripe_locale|escape:'javascript':'UTF-8'}',
+							token: function (token) {
+								var $form = $('#stripe-form');
+								{* Insert the token into the form so it gets submitted to the server: *}
+								$form.append($('<input type="hidden" name="mdstripe-token" />').val(token.id));
+
+								{* Submit the form: *}
+								$form.get(0).submit();
+							}
+						});
+
+						$('#mdstripe_payment_link').click(openStripeHandler);
+						{if $autoplay}
+						openStripeHandler();
+						{/if}
+					}
+
+					initStripe();
+				});
 			}
-			initStripe();
-		});
+
+			initEuStripe();
+		})();
 	</script>
 </div>
 <!-- /mdstripe views/templates/front/eupayment.tpl -->
