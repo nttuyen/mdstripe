@@ -48,10 +48,6 @@
 <script type="text/javascript">
 	(function() {
 		function initApplePay() {
-			if (!{if $apple_pay}true{else}false{/if}) {
-				return;
-			}
-
 			if (typeof $ === 'undefined' || typeof Stripe === 'undefined') {
 				setTimeout(initApplePay, 100);
 				return;

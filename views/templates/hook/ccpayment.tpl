@@ -1,10 +1,6 @@
 <script type="text/javascript">
 	(function() {
 		function initEverything() {
-			if (!{if $stripe_cc_form}true{else}false{/if}) {
-				return;
-			}
-
 			if (typeof $ === 'undefined') {
 				setTimeout(initEverything, '100');
 				return;
