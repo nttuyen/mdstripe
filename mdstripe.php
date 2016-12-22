@@ -1571,7 +1571,7 @@ class MdStripe extends PaymentModule
      */
     public function hookPaymentReturn($params)
     {
-        if ($this->active == false) {
+        if (!$this->active) {
             return '';
         }
 
@@ -1582,7 +1582,14 @@ class MdStripe extends PaymentModule
             $order = $params['order'];
         }
         $currency = new Currency($order->id_currency);
-        $totalToPay = (float) $order->getTotalPaid($currency);
+
+        if (isset($order->reference) && $order->reference) {
+            $totalToPay = (float) $order->getTotalPaid($currency);
+            $reference = $order->reference;
+        } else {
+            $totalToPay = $order->total_paid_tax_incl;
+            $reference = $this->l('Unknown');
+        }
 
         if ($order->getCurrentOrderState()->id != Configuration::get('PS_OS_ERROR')) {
             $this->context->smarty->assign('status', 'ok');
@@ -1590,7 +1597,7 @@ class MdStripe extends PaymentModule
 
         $this->context->smarty->assign(array(
             'id_order' => $order->id,
-            'reference' => $order->reference,
+            'reference' => $reference,
             'params' => $params,
             'total' => Tools::displayPrice($totalToPay, $currency, false),
         ));
