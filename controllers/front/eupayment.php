@@ -24,6 +24,9 @@ require_once dirname(__FILE__).'/../../vendor/autoload.php';
  */
 class MdstripeEupaymentModuleFrontController extends ModuleFrontController
 {
+    /** @var MdStripe $module */
+    public $module;
+
     /**
      * MdstripeEupaymentModuleFrontController constructor.
      */

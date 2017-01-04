@@ -2127,7 +2127,7 @@ class MdStripe extends PaymentModule
     /**
      * Check if shop thumbnail exists
      */
-    protected function checkShopThumb()
+    public function checkShopThumb()
     {
         $dbShopThumb = Configuration::get(self::SHOP_THUMB);
         if (empty($dbShopThumb) || !file_exists(_PS_IMG_.$dbShopThumb)) {
