@@ -2135,7 +2135,9 @@ class MdStripe extends PaymentModule
                 _PS_IMG_DIR_.Configuration::get('PS_LOGO'),
                 _PS_MODULE_DIR_.'mdstripe/views/img/shop'.$this->getShopId().'.jpg',
                 128,
-                128
+                128,
+                'jpg',
+                true
             );
         }
     }

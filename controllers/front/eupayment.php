@@ -72,6 +72,7 @@ class MdstripeEupaymentModuleFrontController extends ModuleFrontController
             $stripeAmount = (int) ($stripeAmount * 100);
         }
 
+        $this->module->checkShopThumb();
 
         $this->context->smarty->assign(array(
             'stripe_email' => $stripeEmail,
@@ -89,6 +90,7 @@ class MdstripeEupaymentModuleFrontController extends ModuleFrontController
             'stripe_collect_billing' => Configuration::get(MdStripe::COLLECT_BILLING),
             'stripe_collect_shipping' => Configuration::get(MdStripe::COLLECT_SHIPPING),
             'autoplay' => true,
+            'stripeShopThumb' => $this->context->link->getMediaLink('/modules/mdstripe/views/img/shop'.$this->getShopId().'.jpg'),
         ));
 
         $this->setTemplate('eupayment.tpl');

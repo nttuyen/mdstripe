@@ -84,7 +84,7 @@
 					bitcoin: {if $stripe_bitcoin}true{else}false{/if},
 					alipay: {if $stripe_alipay}true{else}false{/if},
 					currency: '{$stripe_currency|escape:'javascript':'UTF-8'}',
-					amount: '{$stripe_amount|escape:'javascript':'UTF-8'}',
+					amount: {$stripe_amount|floatval},
 					email: '{$stripe_email|escape:'javascript':'UTf-8'}',
 					billingAddress: {if $stripe_collect_billing}true{else}false{/if},
 					shippingAddress: {if $stripe_collect_shipping}true{else}false{/if}

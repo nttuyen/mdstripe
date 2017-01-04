@@ -53,7 +53,7 @@
 
 				handler = StripeCheckout.configure({
 					key: '{$stripe_publishable_key|escape:'javascript':'UTF-8'}',
-					image: '/img/logo.jpg',
+					image: '{$stripeShopThumb|escape:'javascript':'UTF-8'}',
 					locale: '{$stripe_locale|escape:'javascript':'UTF-8'}',
 					token: function (token) {
 						{* Insert the token into the form so it gets submitted to the server: *}
@@ -70,9 +70,7 @@
 				$('#mdstripe_payment_link').click(openStripeHandler);
 			}
 
-			if ({if $stripe_checkout}true{else}false{/if}) {
-				initStripeCheckout();
-			}
+			initStripeCheckout();
 		})();
 	</script>
 </div>

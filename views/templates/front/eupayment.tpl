@@ -65,7 +65,7 @@
 
 						handler = StripeCheckout.configure({
 							key: '{$stripe_publishable_key|escape:'javascript':'UTF-8'}',
-							image: '/img/logo.jpg',
+							image: '{$stripeShopThumb|escape:'javascript':'UTF-8'}',
 							locale: '{$stripe_locale|escape:'javascript':'UTF-8'}',
 							token: function (token) {
 								var $form = $('#stripe-form');

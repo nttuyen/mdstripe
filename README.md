@@ -29,7 +29,7 @@ https://github.com/firstred/mdstripe/issues
 
 ## Installation
 ### Module installation
-- Upload the module via your Prestashop Back Office
+- Upload the module via your PrestaShop Back Office
 - Install the module
 - Check if there are any errors and correct them if necessary
 - Profit!
@@ -45,7 +45,7 @@ The wiki can be found here: https://github.com/firstred/mdstripe/wiki
 ### Compatibility
 - PrestaShop `1.5.0.17` - `1.5.6.3` (Credit card form needs a lot of markup adjustments, depending on the theme)
 - PrestaShop `1.6.0.5` - `1.6.1.10` (Credit card form doesn't need a lot of adjustments if the theme supports Bootstrap)
-- PrestaShop `1.7.0.0` - `1.7.0.0` (Apple Pay and credit card form are not available, just the original Stripe checkout)
+- PrestaShop `1.7.0.0` - `1.7.0.3` (Apple Pay and credit card form are not available, just the original Stripe checkout)
 
 ## License
 Academic Free License 3.0
