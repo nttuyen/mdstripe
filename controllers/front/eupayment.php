@@ -93,7 +93,7 @@ class MdstripeEupaymentModuleFrontController extends ModuleFrontController
             'stripe_collect_billing' => Configuration::get(MdStripe::COLLECT_BILLING),
             'stripe_collect_shipping' => Configuration::get(MdStripe::COLLECT_SHIPPING),
             'autoplay' => true,
-            'stripeShopThumb' => $this->context->link->getMediaLink('/modules/mdstripe/views/img/shop'.$this->getShopId().'.jpg'),
+            'stripeShopThumb' => $this->context->link->getMediaLink('/modules/mdstripe/views/img/shop'.$this->context->shop->id.'.jpg'),
         ));
 
         $this->setTemplate('eupayment.tpl');
